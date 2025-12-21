@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đăng nhập</title>
+  </head>
+  <body>
+    <a href="{% url 'dashboard' %}">
+      <h1>Trang chủ</h1>
+    </a>
+
+    <h1>Đăng nhập</h1>
+
+    <form method="post">
+      {% csrf_token %}
+
+      <div>
+        <label for="username">Username</label><br />
+        <input type="text" id="username" name="username" required />
+      </div>
+
+      <br />
+
+      <div>
+        <label for="password">Password</label><br />
+        <input type="password" id="password" name="password" required />
+      </div>
+
+      <br />
+      {% if error_message %}
+      <p style="color: red">{{ error_message }}</p>
+      {% endif %}
+      <button type="submit">Đăng nhập</button>
+      <p>Chưa có tài khoản? </p> <a href="{% url 'to_register_page'%}">Đăng kí ngay</a>
+    </form>
+  </body>
+</html>

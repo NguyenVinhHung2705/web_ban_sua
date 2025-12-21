@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trang chủ</title>
+
+    <style>
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        background-color: #f5f7fa;
+        margin: 0;
+        padding: 0;
+      }
+
+      .container {
+        max-width: 500px;
+        margin: 80px auto;
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        text-align: center;
+      }
+
+      h1 {
+        margin-bottom: 30px;
+      }
+
+      .btn {
+        display: block;
+        text-decoration: none;
+        background-color: #4f46e5;
+        color: white;
+        padding: 12px;
+        border-radius: 6px;
+        margin-bottom: 12px;
+        font-weight: bold;
+        transition: 0.2s;
+      }
+
+      .btn:hover {
+        background-color: #4338ca;
+      }
+
+      .btn.secondary {
+        background-color: #64748b;
+      }
+
+      .btn.secondary:hover {
+        background-color: #475569;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>Trang chủ</h1>
+      {% if account.role == "ADMIN" %}
+        <a href="{% url 'to_admin_page' %}" class="btn">Tới trang Admin</a>
+      {% endif %}
+
+      <a href="{% url 'to_view_cart' %}" class="btn">Xem giỏ hàng</a>
+
+      {% if not request.session.account_id %}
+        <a href="{% url 'to_login_page' %}" class="btn secondary">Đăng nhập</a>
+        <a href="{% url 'to_register_page' %}" class="btn secondary">Đăng kí</a>
+      {% else %}
+        <p>số dư {{balance}}</p>
+        <p>người dùng: {{account.username}}</p>
+        <p>số lượng trong giỏ hàng {{total_cart_item}}</p>
+        <a href="{% url 'logout' %}">Đăng xuất</a>
+      {% endif %}
+        
+    </div>
+  </body>
+</html>

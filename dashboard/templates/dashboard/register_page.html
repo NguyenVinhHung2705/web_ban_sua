@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đăng kí</title>
+  </head>
+  <body>
+    <a href="{% url 'dashboard' %}">
+      <h1>Trang chủ</h1>
+    </a>
+
+    <h1>Đăng kí</h1>
+
+    <form method="post">
+      {% csrf_token %}
+
+      {% if error_message %}
+        <p style="color: red">{{ error_message }}</p>
+      {% endif %}
+
+      {% if success_message %}
+        <!-- THẺ THÀNH CÔNG -->
+        <div id="success-box" style="
+          border: 1px solid green;
+          padding: 12px;
+          color: green;
+          margin-bottom: 15px;
+        ">
+          {{ success_message }}.<br>
+          Chuyển đến trang đăng nhập sau
+          <span id="countdown">5</span> giây...
+        </div>
+      {% endif %}
+
+      <div>
+        <label>Username</label><br />
+        <input type="text" name="username" required />
+      </div>
+
+      <br />
+
+      <div>
+        <label>Password</label><br />
+        <input type="password" name="password" required />
+      </div>
+
+      <br />
+
+      <div>
+        <label>Confirm password</label><br />
+        <input type="password" name="confirm_password" required />
+      </div>
+
+      <button type="submit">Đăng kí</button>
+      <p>Đã có tài khoản? </p> <a href="{% url 'to_login_page'%}">Đăng nhập ngay</a>
+    </form>
+
+    <!-- SCRIPT CHỈ CHẠY KHI CÓ success_message -->
+    {% if success_message %}
+    <script>
+      let seconds = 5;
+      const countdownEl = document.getElementById('countdown');
+
+      const timer = setInterval(() => {
+        seconds--;
+        countdownEl.textContent = seconds;
+
+        if (seconds <= 0) {
+          clearInterval(timer);
+          window.location.href = "{% url 'to_login_page' %}";
+        }
+      }, 1000);
+    </script>
+    {% endif %}
+
+  </body>
+</html>
