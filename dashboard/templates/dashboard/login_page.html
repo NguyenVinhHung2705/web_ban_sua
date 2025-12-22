@@ -1,38 +1,66 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Đăng nhập</title>
+    <link rel="stylesheet" href="{% static 'css/auth.css' %}">
   </head>
+
   <body>
-    <a href="{% url 'dashboard' %}">
-      <h1>Trang chủ</h1>
-    </a>
+    <div class="auth-shell">
+      <!-- Left: Branding -->
+      <section class="brand-panel">
+        <div class="brand-content">
+          <div class="brand-badge">🔐 Hệ thống tài khoản</div>
+          <h1 class="brand-title">Chào mừng quay lại</h1>
+          <p class="brand-sub">
+            Đăng nhập để quản lý sản phẩm, đơn hàng và trải nghiệm đầy đủ tính năng của hệ thống.
+          </p>
 
-    <h1>Đăng nhập</h1>
+          <div class="brand-links">
+            <a class="link-pill" href="{% url 'dashboard' %}">🏠 Trang chủ</a>
+            <a class="link-pill" href="{% url 'to_register_page' %}">✨ Tạo tài khoản</a>
+          </div>
+        </div>
+      </section>
 
-    <form method="post">
-      {% csrf_token %}
+      <!-- Right: Form -->
+      <main class="card">
+        <div class="header">
+          <div>
+            <h2 class="title">Đăng nhập</h2>
+            <p class="subtitle">Nhập thông tin để tiếp tục.</p>
+          </div>
+          <a class="home-link" href="{% url 'dashboard' %}">Về trang chủ</a>
+        </div>
 
-      <div>
-        <label for="username">Username</label><br />
-        <input type="text" id="username" name="username" required />
-      </div>
+        <form class="form" method="post" novalidate>
+          {% csrf_token %}
 
-      <br />
+          {% if error_message %}
+            <div class="alert alert-danger">{{ error_message }}</div>
+          {% endif %}
 
-      <div>
-        <label for="password">Password</label><br />
-        <input type="password" id="password" name="password" required />
-      </div>
+          <div class="field">
+            <label for="username">Username</label>
+            <input class="input" type="text" id="username" name="username" placeholder="Nhập username" required />
+          </div>
 
-      <br />
-      {% if error_message %}
-      <p style="color: red">{{ error_message }}</p>
-      {% endif %}
-      <button type="submit">Đăng nhập</button>
-      <p>Chưa có tài khoản? </p> <a href="{% url 'to_register_page'%}">Đăng kí ngay</a>
-    </form>
+          <div class="field">
+            <label for="password">Password</label>
+            <input class="input" type="password" id="password" name="password" placeholder="Nhập mật khẩu" required />
+          </div>
+
+          <button class="btn" type="submit">Đăng nhập</button>
+
+          <div class="footer">
+            Chưa có tài khoản?
+            <a href="{% url 'to_register_page'%}">Đăng kí ngay</a>
+          </div>
+        </form>
+      </main>
+    </div>
   </body>
 </html>

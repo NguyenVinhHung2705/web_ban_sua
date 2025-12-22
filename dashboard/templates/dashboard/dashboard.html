@@ -1,77 +1,102 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="vi">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Trang chủ</title>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trang chủ</title>
 
-    <style>
-      body {
-        font-family: Arial, Helvetica, sans-serif;
-        background-color: #f5f7fa;
-        margin: 0;
-        padding: 0;
-      }
+  <link rel="stylesheet" href="{% static 'css/home.css' %}">
+</head>
 
-      .container {
-        max-width: 500px;
-        margin: 80px auto;
-        background: white;
-        padding: 30px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        text-align: center;
-      }
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <a class="logo" href="{% url 'dashboard' %}">
+        <span class="logo-badge">M</span>
+        <span>MilkStore</span>
+      </a>
 
-      h1 {
-        margin-bottom: 30px;
-      }
+      <div class="search">
+        <input type="text" placeholder="Tìm sữa, bỉm, vitamin..." />
+        <span class="chip">Giao nhanh</span>
+      </div>
 
-      .btn {
-        display: block;
-        text-decoration: none;
-        background-color: #4f46e5;
-        color: white;
-        padding: 12px;
-        border-radius: 6px;
-        margin-bottom: 12px;
-        font-weight: bold;
-        transition: 0.2s;
-      }
+      <div class="actions">
+        {% if account.role == "ADMIN" %}
+          <a class="btn secondary" href="{% url 'to_admin_page' %}">Admin</a>
+        {% endif %}
 
-      .btn:hover {
-        background-color: #4338ca;
-      }
+        <a class="cart" href="{% url 'to_view_cart' %}">
+          🛒 Giỏ hàng
+          <span class="badge">{{ total_cart_item|default:0 }}</span>
+        </a>
 
-      .btn.secondary {
-        background-color: #64748b;
-      }
-
-      .btn.secondary:hover {
-        background-color: #475569;
-      }
-    </style>
-  </head>
-
-  <body>
-    <div class="container">
-      <h1>Trang chủ</h1>
-      {% if account.role == "ADMIN" %}
-        <a href="{% url 'to_admin_page' %}" class="btn">Tới trang Admin</a>
-      {% endif %}
-
-      <a href="{% url 'to_view_cart' %}" class="btn">Xem giỏ hàng</a>
-
-      {% if not request.session.account_id %}
-        <a href="{% url 'to_login_page' %}" class="btn secondary">Đăng nhập</a>
-        <a href="{% url 'to_register_page' %}" class="btn secondary">Đăng kí</a>
-      {% else %}
-        <p>số dư {{balance}}</p>
-        <p>người dùng: {{account.username}}</p>
-        <p>số lượng trong giỏ hàng {{total_cart_item}}</p>
-        <a href="{% url 'logout' %}">Đăng xuất</a>
-      {% endif %}
-        
+        {% if not request.session.account_id %}
+          <a class="btn secondary" href="{% url 'to_login_page' %}">Đăng nhập</a>
+          <a class="btn primary" href="{% url 'to_register_page' %}">Đăng kí</a>
+        {% else %}
+          <a class="btn secondary" href="{% url 'logout' %}">Đăng xuất</a>
+        {% endif %}
+      </div>
     </div>
-  </body>
+  </header>
+
+  <main class="wrap">
+    <!-- Hero -->
+    <section class="hero">
+      <div>
+        <h1>Web bán sữa chính hãng<br/>giá tốt mỗi ngày</h1>
+        <p>
+          Chọn sữa phù hợp cho bé và gia đình. Ưu đãi theo combo, giao nhanh, hỗ trợ đổi trả.
+        </p>
+        <div class="hero-cta">
+          <a class="btn primary" href="{% url 'to_view_cart' %}">Xem giỏ hàng</a>
+          {% if not request.session.account_id %}
+            <a class="btn secondary" href="{% url 'to_login_page' %}">Đăng nhập để mua</a>
+          {% endif %}
+        </div>
+      </div>
+      <div class="hero-art" aria-label="banner"></div>
+    </section>
+
+    <!-- Trust / info -->
+    <section class="grid">
+      <div class="card">
+        <p class="card-title">✅ Hàng chính hãng</p>
+        <p class="card-sub">Cam kết nguồn gốc rõ ràng, hạn dùng minh bạch.</p>
+      </div>
+      <div class="card">
+        <p class="card-title">🚚 Giao nhanh</p>
+        <p class="card-sub">Giao nội thành nhanh, theo dõi đơn dễ dàng.</p>
+      </div>
+      <div class="card">
+        <p class="card-title">💳 Thanh toán an toàn</p>
+        <p class="card-sub">Hỗ trợ nhiều phương thức, bảo mật thông tin.</p>
+      </div>
+    </section>
+
+    <!-- Logged-in account summary -->
+    {% if request.session.account_id %}
+    <section class="account">
+      <div>
+        <div style="color:var(--muted); font-size:13px;">Xin chào</div>
+        <div style="font-size:18px; font-weight:900;">{{ account.username }}</div>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi">
+          <small>Số dư ví</small>
+          <b>{{ balance }}</b>
+        </div>
+        <div class="kpi">
+          <small>Trong giỏ hàng</small>
+          <b>{{ total_cart_item }} sản phẩm</b>
+        </div>
+      </div>
+    </section>
+    {% endif %}
+  </main>
+</body>
 </html>

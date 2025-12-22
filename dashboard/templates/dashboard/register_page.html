@@ -1,78 +1,98 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Đăng kí</title>
+    <link rel="stylesheet" href="{% static 'css/auth.css' %}">
   </head>
+
   <body>
-    <a href="{% url 'dashboard' %}">
-      <h1>Trang chủ</h1>
-    </a>
+    <div class="auth-shell">
+      <!-- Left: Branding -->
+      <section class="brand-panel">
+        <div class="brand-content">
+          <div class="brand-badge">🧾 Tạo tài khoản mới</div>
+          <h1 class="brand-title">Bắt đầu ngay</h1>
+          <p class="brand-sub">
+            Tạo tài khoản để sử dụng đầy đủ tính năng. Sau khi đăng kí thành công, bạn sẽ được chuyển sang trang đăng nhập.
+          </p>
 
-    <h1>Đăng kí</h1>
-
-    <form method="post">
-      {% csrf_token %}
-
-      {% if error_message %}
-        <p style="color: red">{{ error_message }}</p>
-      {% endif %}
-
-      {% if success_message %}
-        <!-- THẺ THÀNH CÔNG -->
-        <div id="success-box" style="
-          border: 1px solid green;
-          padding: 12px;
-          color: green;
-          margin-bottom: 15px;
-        ">
-          {{ success_message }}.<br>
-          Chuyển đến trang đăng nhập sau
-          <span id="countdown">5</span> giây...
+          <div class="brand-links">
+            <a class="link-pill" href="{% url 'dashboard' %}">🏠 Trang chủ</a>
+            <a class="link-pill" href="{% url 'to_login_page' %}">🔑 Đăng nhập</a>
+          </div>
         </div>
-      {% endif %}
+      </section>
 
-      <div>
-        <label>Username</label><br />
-        <input type="text" name="username" required />
-      </div>
+      <!-- Right: Form -->
+      <main class="card">
+        <div class="header">
+          <div>
+            <h2 class="title">Đăng kí</h2>
+            <p class="subtitle">Điền thông tin để tạo tài khoản.</p>
+          </div>
+          <a class="home-link" href="{% url 'dashboard' %}">Về trang chủ</a>
+        </div>
 
-      <br />
+        <form class="form" method="post" novalidate>
+          {% csrf_token %}
 
-      <div>
-        <label>Password</label><br />
-        <input type="password" name="password" required />
-      </div>
+          {% if error_message %}
+            <div class="alert alert-danger">{{ error_message }}</div>
+          {% endif %}
 
-      <br />
+          {% if success_message %}
+            <div id="success-box" class="alert alert-success">
+              {{ success_message }}.<br>
+              Chuyển đến trang đăng nhập sau
+              <span id="countdown" class="countdown">5</span> giây...
+            </div>
+          {% endif %}
 
-      <div>
-        <label>Confirm password</label><br />
-        <input type="password" name="confirm_password" required />
-      </div>
+          <div class="field">
+            <label>Username</label>
+            <input class="input" type="text" name="username" placeholder="Ví dụ: binhdoan01" required />
+          </div>
 
-      <button type="submit">Đăng kí</button>
-      <p>Đã có tài khoản? </p> <a href="{% url 'to_login_page'%}">Đăng nhập ngay</a>
-    </form>
+          <div class="row">
+            <div class="field" style="flex:1">
+              <label>Password</label>
+              <input class="input" type="password" name="password" placeholder="Tối thiểu 6 ký tự" required />
+            </div>
 
-    <!-- SCRIPT CHỈ CHẠY KHI CÓ success_message -->
-    {% if success_message %}
-    <script>
-      let seconds = 5;
-      const countdownEl = document.getElementById('countdown');
+            <div class="field" style="flex:1">
+              <label>Confirm password</label>
+              <input class="input" type="password" name="confirm_password" placeholder="Nhập lại mật khẩu" required />
+            </div>
+          </div>
 
-      const timer = setInterval(() => {
-        seconds--;
-        countdownEl.textContent = seconds;
+          <button class="btn" type="submit">Đăng kí</button>
 
-        if (seconds <= 0) {
-          clearInterval(timer);
-          window.location.href = "{% url 'to_login_page' %}";
-        }
-      }, 1000);
-    </script>
-    {% endif %}
+          <div class="footer">
+            Đã có tài khoản?
+            <a href="{% url 'to_login_page'%}">Đăng nhập ngay</a>
+          </div>
+        </form>
 
+        {% if success_message %}
+        <script>
+          let seconds = 5;
+          const countdownEl = document.getElementById("countdown");
+
+          const timer = setInterval(() => {
+            seconds--;
+            countdownEl.textContent = seconds;
+
+            if (seconds <= 0) {
+              clearInterval(timer);
+              window.location.href = "{% url 'to_login_page' %}";
+            }
+          }, 1000);
+        </script>
+        {% endif %}
+      </main>
+    </div>
   </body>
 </html>
