@@ -1,0 +1,201 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Sửa sản phẩm</title>
+  <link rel="stylesheet" href="{% static 'css/admin_page.css' %}">
+</head>
+<body>
+
+<div class="container">
+  <div class="topbar">
+    <div class="brand"><a href="{% url 'admin_products' %}">← Sản phẩm</a></div>
+    <div class="muted">Xin chào <b>{{ account.username }}</b></div>
+  </div>
+
+  <div class="page-card">
+    <h1>Sửa sản phẩm #{{ p.product_id }}</h1>
+
+    {% if error_message %}
+      <div class="alert">{{ error_message }}</div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="form-card">
+      {% csrf_token %}
+
+      <div class="form-grid">
+        <div class="field">
+          <label>Tên sản phẩm</label>
+          <input type="text" name="product_name" value="{{ p.product_name }}" required>
+        </div>
+
+        <div class="field">
+          <label>Giá</label>
+          <input type="number" step="0.01" name="price" value="{{ p.price }}" required>
+        </div>
+
+        <div class="field">
+          <label>Danh mục</label>
+          <select name="category_id" required>
+            <option value="">-- Chọn danh mục --</option>
+            {% for c in categories %}
+              <option value="{{ c.category_id }}" {% if p.category and p.category.category_id == c.category_id %}selected{% endif %}>
+                {{ c.category_name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- ✅ MAIN IMAGE: current + preview new -->
+        <div class="field">
+          <label>Ảnh chính</label>
+
+          <div class="img-preview-wrap">
+            {% if p.image %}
+              <img id="mainImgPreview" class="img-preview" src="{{ p.image.url }}" alt="main">
+            {% else %}
+              <img id="mainImgPreview" class="img-preview" style="display:none;" alt="main">
+              <div class="muted" style="font-size:12px;">Chưa có ảnh</div>
+            {% endif %}
+          </div>
+
+          <label style="margin-top:10px;">Đổi ảnh chính (nếu muốn)</label>
+          <input id="mainImgInput" type="file" name="image" accept="image/*">
+          <div class="muted" style="font-size:12px;">Chọn ảnh mới sẽ preview ngay bên trên</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Mô tả</label>
+        <textarea name="description" rows="3">{{ p.description }}</textarea>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label>Badge</label>
+          <div class="check-row">
+            <label><input type="checkbox" name="is_genuine" {% if p.is_genuine %}checked{% endif %}> Chính hãng</label>
+            <label><input type="checkbox" name="is_fast_ship" {% if p.is_fast_ship %}checked{% endif %}> Giao nhanh</label>
+          </div>
+        </div>
+
+        <!-- ✅ GALLERY: input + preview new files -->
+        <div class="field">
+          <label>Thêm ảnh phụ (gallery)</label>
+          <input id="galleryInput" type="file" name="gallery_images" accept="image/*" multiple>
+
+          <div id="galleryPreview" class="gallery-preview" style="display:none;"></div>
+
+          <div class="muted" style="font-size:12px;">Ảnh mới chọn sẽ preview ở đây (chưa lưu DB cho đến khi bấm Lưu)</div>
+        </div>
+      </div>
+
+      {% if gallery %}
+        <div class="field">
+          <label>Ảnh phụ hiện có (tick để xóa)</label>
+          <div class="gallery-grid">
+            {% for g in gallery %}
+              <label class="gitem">
+                <input type="checkbox" name="delete_gallery" value="{{ g.id }}">
+                <img src="{{ g.image.url }}" alt="gallery">
+                <span>Xóa</span>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="form-grid">
+        <div class="field">
+          <label>Gợi ý</label>
+          <input type="text" name="hint_text" value="{{ p.hint_text }}">
+        </div>
+        <div class="field">
+          <label>Bảo quản (ngắn)</label>
+          <input type="text" name="storage_short" value="{{ p.storage_short }}">
+        </div>
+        <div class="field">
+          <label>Đổi trả</label>
+          <input type="text" name="return_policy" value="{{ p.return_policy }}">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Hướng dẫn bảo quản</label>
+        <textarea name="storage_guide" rows="4">{{ p.storage_guide }}</textarea>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label>Năng lượng (kcal)</label>
+          <input type="number" name="energy_kcal" value="{{ p.energy_kcal }}">
+        </div>
+        <div class="field">
+          <label>Protein (g)</label>
+          <input type="number" step="0.1" name="protein_g" value="{{ p.protein_g }}">
+        </div>
+        <div class="field">
+          <label>Fat (g)</label>
+          <input type="number" step="0.1" name="fat_g" value="{{ p.fat_g }}">
+        </div>
+        <div class="field">
+          <label>Carb (g)</label>
+          <input type="number" step="0.1" name="carb_g" value="{{ p.carb_g }}">
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn primary" type="submit">Lưu</button>
+        <a class="btn secondary" href="{% url 'admin_products' %}">Hủy</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ✅ preview scripts -->
+<script>
+  // MAIN IMAGE preview
+  (function(){
+    const input = document.getElementById("mainImgInput");
+    const preview = document.getElementById("mainImgPreview");
+    if (!input || !preview) return;
+
+    input.addEventListener("change", (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      preview.src = URL.createObjectURL(f);
+      preview.style.display = "block";
+    });
+  })();
+
+  // GALLERY preview (multiple)
+  (function(){
+    const input = document.getElementById("galleryInput");
+    const box = document.getElementById("galleryPreview");
+    if (!input || !box) return;
+
+    input.addEventListener("change", () => {
+      box.innerHTML = "";
+      const files = Array.from(input.files || []);
+      if (!files.length){
+        box.style.display = "none";
+        return;
+      }
+      files.forEach(f => {
+        const url = URL.createObjectURL(f);
+        const img = document.createElement("img");
+        img.src = url;
+        img.alt = "new gallery";
+        box.appendChild(img);
+      });
+      box.style.display = "grid";
+    });
+  })();
+</script>
+
+</body>
+</html>

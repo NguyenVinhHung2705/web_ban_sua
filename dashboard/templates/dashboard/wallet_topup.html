@@ -1,0 +1,62 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nạp ví</title>
+  <link rel="stylesheet" href="{% static 'css/home.css' %}">
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <a class="logo" href="{% url 'dashboard' %}">
+      <span class="logo-badge">M</span><span>MilkStore</span>
+    </a>
+
+    <div class="actions">
+      <a class="cart" href="{% url 'to_view_cart' %}">
+        🛒 Giỏ hàng <span class="badge">{{ total_cart_item|default:0 }}</span>
+      </a>
+      <a class="btn secondary" href="{% url 'dashboard' %}">Trang chủ</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <h2 style="margin: 10px 0 12px;">Nạp ví (Demo)</h2>
+
+  {% if error_message %}
+    <div class="card" style="border:1px solid rgba(239,68,68,.25); background:rgba(239,68,68,.06); color:#991b1b;">
+      {{ error_message }}
+    </div>
+  {% endif %}
+
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+      <div>
+        <div style="color:var(--muted); font-size:13px;">Người dùng</div>
+        <div style="font-weight:900;">{{ account.username }}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="color:var(--muted); font-size:13px;">Số dư hiện tại</div>
+        <div style="font-weight:900; font-size:18px;">{{ balance }}</div>
+      </div>
+    </div>
+
+    <form method="post" style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      {% csrf_token %}
+      <input type="number" name="amount" step="0.01" min="0" placeholder="Nhập số tiền (vd: 500000)" style="flex:1; min-width:240px; padding:12px; border-radius:12px; border:1px solid rgba(15,23,42,.12);" required>
+      <button class="btn primary" type="submit">Nạp</button>
+      <a class="btn secondary" href="{% url 'dashboard' %}">Hủy</a>
+    </form>
+
+    <div style="margin-top:10px; color:var(--muted); font-size:13px;">
+      * Đây là chức năng demo để test thanh toán.
+    </div>
+  </div>
+</main>
+
+</body>
+</html>

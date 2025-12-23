@@ -1,0 +1,103 @@
+{% load static %}
+{% load tz %}
+{% load formatters %}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quản lý đơn hàng</title>
+  <link rel="stylesheet" href="{% static 'css/admin_page.css' %}">
+</head>
+<body>
+
+<div class="container">
+  <div class="topbar">
+    <div class="brand">
+      <a href="{% url 'to_admin_page' %}">← Admin</a>
+    </div>
+    <div class="muted">
+      {% if account %}Xin chào <b>{{ account.username }}</b>{% endif %}
+    </div>
+  </div>
+
+  <div class="page-card">
+    <h1>Quản lý đơn hàng</h1>
+
+    <div class="subhead">
+      <div class="left">
+        <span class="chip2">Tổng số đơn: <b>{{ orders|length }}</b></span>
+        <span class="chip2">Gợi ý: <b>Click “Xem”</b> để xem chi tiết</span>
+      </div>
+      <span class="chip2">Cập nhật trạng thái trong chi tiết đơn</span>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-head">
+        <div class="table-title">
+          <span class="dot"></span>
+          <b>Danh sách đơn</b>
+        </div>
+        <span class="pill">Admin</span>
+      </div>
+
+      {% if orders %}
+        <table>
+          <thead>
+            <tr>
+              <th>Mã</th>
+              <th>Khách</th>
+              <th>Thời gian</th>
+              <th class="right">Tổng tiền</th>
+              <th class="center">Trạng thái</th>
+              <th class="right">Thao tác</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for o in orders %}
+              <tr>
+                <td><b>#{{ o.order_id }}</b></td>
+                <td>{{ o.account.username }}</td>
+
+                <td class="muted">
+                  {{ o.created_at|localtime|date:"d/m/Y H:i" }}
+                </td>
+
+                <td class="right">
+                  <b>{{ o.total_amount|vnd }}</b>
+                </td>
+
+                <td class="center">
+                  {% if o.status == "PAID" %}
+                    <span class="badge paid">PAID</span>
+                  {% elif o.status == "PENDING" %}
+                    <span class="badge pending">PENDING</span>
+                  {% elif o.status == "FAILED" %}
+                    <span class="badge failed">FAILED</span>
+                  {% elif o.status == "CANCELLED" %}
+                    <span class="badge failed">CANCELLED</span>
+                  {% else %}
+                    <span class="badge ship">{{ o.status }}</span>
+                  {% endif %}
+                </td>
+
+                <td class="right">
+                  <a class="btn primary" href="{% url 'admin_order_detail' o.order_id %}">Xem</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="card">
+          <div class="muted">Chưa có đơn hàng nào.</div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

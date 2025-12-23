@@ -1,0 +1,41 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Sửa danh mục</title>
+  <link rel="stylesheet" href="{% static 'css/admin_page.css' %}">
+</head>
+<body>
+
+<div class="container">
+  <div class="topbar">
+    <div class="brand"><a href="{% url 'admin_categories' %}">← Danh mục</a></div>
+    <div class="muted">Xin chào <b>{{ account.username }}</b></div>
+  </div>
+
+  <div class="page-card">
+    <h1>Sửa danh mục #{{ c.category_id }}</h1>
+
+    {% if error_message %}
+      <div class="alert">{{ error_message }}</div>
+    {% endif %}
+
+    <form method="post" class="form-card">
+      {% csrf_token %}
+      <div class="field">
+        <label>Tên danh mục</label>
+        <input type="text" name="category_name" value="{{ c.category_name }}" required>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn primary" type="submit">Lưu</button>
+        <a class="btn secondary" href="{% url 'admin_categories' %}">Hủy</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+</body>
+</html>

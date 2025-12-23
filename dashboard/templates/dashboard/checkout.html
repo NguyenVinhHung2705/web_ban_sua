@@ -1,0 +1,83 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Thanh toán</title>
+  <link rel="stylesheet" href="{% static 'css/home.css' %}">
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <a class="logo" href="{% url 'dashboard' %}">
+      <span class="logo-badge">M</span><span>MilkStore</span>
+    </a>
+    <div class="actions">
+      <a class="cart" href="{% url 'to_view_cart' %}">🛒 Giỏ hàng <span class="badge">{{ total_cart_item|default:0 }}</span></a>
+      <a class="btn secondary" href="{% url 'my_orders' %}">Đơn hàng</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <h2 style="margin:10px 0 12px;">Xác nhận thanh toán</h2>
+
+  <form method="post" style="display:grid; gap:12px;">
+    {% csrf_token %}
+
+    <div style="margin-top:4px; display:grid; gap:10px;">
+      <div>
+        <div style="color:var(--muted); font-size:13px;">Họ và tên</div>
+        <input name="receiver_name" required
+          value="{{ receiver_name|default:'' }}"
+          style="width:100%; padding:12px; border-radius:12px; border:1px solid rgba(15,23,42,.12);" />
+      </div>
+
+      <div>
+        <div style="color:var(--muted); font-size:13px;">Số điện thoại</div>
+        <input name="receiver_phone" required
+          value="{{ receiver_phone|default:'' }}"
+          style="width:100%; padding:12px; border-radius:12px; border:1px solid rgba(15,23,42,.12);" />
+      </div>
+
+      <div>
+        <div style="color:var(--muted); font-size:13px;">Địa chỉ giao hàng</div>
+        <input name="receiver_address" required
+          value="{{ receiver_address|default:'' }}"
+          style="width:100%; padding:12px; border-radius:12px; border:1px solid rgba(15,23,42,.12);" />
+      </div>
+    </div>
+
+    {% if error_message %}
+      <div class="card" style="border:1px solid rgba(239,68,68,.25); background:rgba(239,68,68,.06); color:#991b1b;">
+        {{ error_message }}
+      </div>
+    {% endif %}
+
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+        <div>
+          <div style="color:var(--muted); font-size:13px;">Số dư ví</div>
+          <div style="font-weight:900; font-size:18px;">{{ balance }}</div>
+        </div>
+        <div>
+          <div style="color:var(--muted); font-size:13px;">Tổng thanh toán</div>
+          <div style="font-weight:900; font-size:18px;">{{ cart_total }} đ</div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn primary" type="submit">Xác nhận thanh toán</button>
+        <a class="btn secondary" href="{% url 'to_view_cart' %}">Quay lại giỏ</a>
+      </div>
+    </div>
+
+  </form>
+</main>
+
+
+</body>
+</html>

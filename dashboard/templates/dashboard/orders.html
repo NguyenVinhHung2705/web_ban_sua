@@ -1,0 +1,60 @@
+{% load static %}
+{% load tz %}
+{% load formatters %}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đơn hàng</title>
+  <link rel="stylesheet" href="{% static 'css/home.css' %}">
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <a class="logo" href="{% url 'dashboard' %}">
+      <span class="logo-badge">M</span><span>MilkStore</span>
+    </a>
+    <div class="actions">
+      <a class="cart" href="{% url 'to_view_cart' %}">
+        🛒 Giỏ hàng <span class="badge">{{ total_cart_item|default:0 }}</span>
+      </a>
+      <a class="btn secondary" href="{% url 'dashboard' %}">Trang chủ</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <h2 style="margin:10px 0 12px;">Lịch sử đơn hàng</h2>
+
+  {% if orders %}
+    <div class="grid" style="grid-template-columns:1fr; gap:12px;">
+      {% for o in orders %}
+        <a class="card" href="{% url 'order_detail' o.order_id %}" style="display:block;">
+          <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+            <div>
+              <div style="font-weight:900;">Đơn #{{ o.order_id }}</div>
+              <div style="color:var(--muted); font-size:13px;">
+                {{ o.created_at|localtime|date:"d/m/Y H:i" }}
+              </div>
+            </div>
+
+            <div style="text-align:right;">
+              <div style="font-weight:900;">
+                {{ o.total_amount|vnd }}
+              </div>
+              <div style="color:var(--muted); font-size:13px;">{{ o.status }}</div>
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p style="color:var(--muted);">Chưa có đơn hàng nào.</p>
+  {% endif %}
+</main>
+
+</body>
+</html>

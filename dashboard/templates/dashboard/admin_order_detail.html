@@ -1,0 +1,122 @@
+{% load static %}
+{% load tz %}
+{% load formatters %}
+{% get_media_prefix as MEDIA_PREFIX %}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Đơn #{{ order.order_id }}</title>
+  <link rel="stylesheet" href="{% static 'css/admin_page.css' %}">
+</head>
+<body>
+
+<div class="container">
+  <div class="topbar">
+    <div class="brand">
+      <a href="{% url 'admin_orders' %}">← Danh sách đơn</a>
+    </div>
+    <div class="muted">
+      {% if account %}Xin chào <b>{{ account.username }}</b>{% endif %}
+    </div>
+  </div>
+
+  <h1>Đơn #{{ order.order_id }}</h1>
+
+  <div class="card" style="display:grid; gap:10px;">
+    <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+      <div>
+        <div class="muted">Khách</div>
+        <div style="font-weight:900;">{{ order.account.username }}</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="muted">Thời gian</div>
+        <div style="font-weight:900;">
+          {{ order.created_at|localtime|date:"d/m/Y H:i" }}
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+      <div>
+        <div class="muted">Người nhận</div>
+        <div>
+          <b>{{ order.receiver_name|default:"(chưa có)" }}</b>
+          — {{ order.receiver_phone|default:"(chưa có)" }}
+        </div>
+        <div class="muted" style="margin-top:4px;">
+          {{ order.receiver_address|default:"(chưa có)" }}
+        </div>
+      </div>
+
+      <div style="text-align:right;">
+        <div class="muted">Tổng tiền</div>
+        <div style="font-weight:900; font-size:18px;">
+          {{ order.total_amount|vnd }}
+        </div>
+        <div class="muted" style="margin-top:6px;">
+          Trạng thái: <b>{{ order.status }}</b>
+        </div>
+      </div>
+    </div>
+
+    <form method="post"
+          action="{% url 'admin_order_update_status' order.order_id %}"
+          style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      {% csrf_token %}
+      <select name="status" style="padding:10px 12px; border-radius:12px; border:1px solid rgba(15,23,42,.12);">
+        <option value="PENDING" {% if order.status == "PENDING" %}selected{% endif %}>PENDING</option>
+        <option value="PAID" {% if order.status == "PAID" %}selected{% endif %}>PAID</option>
+        <option value="FAILED" {% if order.status == "FAILED" %}selected{% endif %}>FAILED</option>
+        <option value="CANCELLED" {% if order.status == "CANCELLED" %}selected{% endif %}>CANCELLED</option>
+      </select>
+      <button class="btn primary" type="submit">Cập nhật trạng thái</button>
+    </form>
+  </div>
+
+  <h2 style="margin-top:14px;">Sản phẩm</h2>
+
+  <div class="grid" style="grid-template-columns:1fr; gap:12px;">
+    {% for it in items %}
+      <div class="card" style="display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap;">
+        <div style="display:flex; gap:12px; align-items:center; min-width:260px;">
+          <div style="width:80px; height:80px; border-radius:12px; overflow:hidden; border:1px solid rgba(15,23,42,.10); background:#fff;">
+            {% if it.product and it.product.image %}
+              <img src="{{ it.product.image.url }}" alt="{{ it.product_name }}" style="width:100%; height:100%; object-fit:cover;">
+            {% elif it.product_image_name %}
+              <img src="{{ MEDIA_PREFIX }}{{ it.product_image_name }}" alt="{{ it.product_name }}" style="width:100%; height:100%; object-fit:cover;">
+            {% else %}
+              <div class="muted" style="display:grid; place-items:center; height:100%;">No img</div>
+            {% endif %}
+          </div>
+
+          <div style="flex:1;">
+            <div style="font-weight:900;">{{ it.product_name }}</div>
+            <div class="muted">
+              {{ it.unit_price|vnd }} × {{ it.quantity }}
+            </div>
+          </div>
+        </div>
+
+        <div style="text-align:right;">
+          <div class="muted" style="font-size:13px;">Thành tiền</div>
+          {% if it.line_total %}
+            <div style="font-weight:900;">{{ it.line_total|vnd }}</div>
+          {% else %}
+            <div style="font-weight:900;">{{ it.unit_price|vnd }}</div>
+          {% endif %}
+        </div>
+      </div>
+    {% empty %}
+      <div class="card">
+        <div class="muted">Không có sản phẩm trong đơn.</div>
+      </div>
+    {% endfor %}
+  </div>
+
+</div>
+
+</body>
+</html>

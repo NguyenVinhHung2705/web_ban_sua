@@ -1,4 +1,5 @@
 {% load static %}
+{% load formatters %}
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -18,13 +19,13 @@
         <span>MilkStore</span>
       </a>
 
-      <div class="search">
-        <input type="text" placeholder="Tìm sữa, bỉm, vitamin..." />
-        <span class="chip">Giao nhanh</span>
-      </div>
+      <form class="search" action="{% url 'dashboard' %}" method="get">
+        <input type="text" name="q" value="{{ q|default:'' }}" placeholder="Tìm sữa, bỉm, vitamin..." />
+        <button class="chip" type="submit">Tìm</button>
+      </form>
 
       <div class="actions">
-        {% if account.role == "ADMIN" %}
+        {% if account and account.role == "ADMIN" %}
           <a class="btn secondary" href="{% url 'to_admin_page' %}">Admin</a>
         {% endif %}
 
@@ -37,6 +38,9 @@
           <a class="btn secondary" href="{% url 'to_login_page' %}">Đăng nhập</a>
           <a class="btn primary" href="{% url 'to_register_page' %}">Đăng kí</a>
         {% else %}
+          <span class="chip">Ví: <b>{{ balance|vnd }}</b></span>
+          <a class="btn secondary" href="{% url 'wallet_topup' %}">Nạp ví</a>
+          <a class="btn secondary" href="{% url 'my_orders' %}">Đơn hàng</a>
           <a class="btn secondary" href="{% url 'logout' %}">Đăng xuất</a>
         {% endif %}
       </div>
@@ -51,13 +55,19 @@
         <p>
           Chọn sữa phù hợp cho bé và gia đình. Ưu đãi theo combo, giao nhanh, hỗ trợ đổi trả.
         </p>
+
         <div class="hero-cta">
-          <a class="btn primary" href="{% url 'to_view_cart' %}">Xem giỏ hàng</a>
+          <a class="btn primary" href="#products">Xem sản phẩm</a>
+          <a class="btn secondary" href="{% url 'to_view_cart' %}">Xem giỏ hàng</a>
+
           {% if not request.session.account_id %}
             <a class="btn secondary" href="{% url 'to_login_page' %}">Đăng nhập để mua</a>
+          {% else %}
+            <a class="btn secondary" href="{% url 'wallet_topup' %}">Nạp ví</a>
           {% endif %}
         </div>
       </div>
+
       <div class="hero-art" aria-label="banner"></div>
     </section>
 
@@ -77,25 +87,85 @@
       </div>
     </section>
 
-    <!-- Logged-in account summary -->
-    {% if request.session.account_id %}
-    <section class="account">
-      <div>
-        <div style="color:var(--muted); font-size:13px;">Xin chào</div>
-        <div style="font-size:18px; font-weight:900;">{{ account.username }}</div>
+    <!-- Featured products -->
+    <section class="section" id="products">
+      <div class="section-head">
+        {% if q %}
+          <h2>Kết quả tìm kiếm: “{{ q }}”</h2>
+          <span class="muted">Tìm thấy {{ search_count }} sản phẩm</span>
+        {% else %}
+          <h2>Sản phẩm nổi bật</h2>
+          <span class="muted">Giá tốt – chính hãng</span>
+        {% endif %}
       </div>
 
-      <div class="kpis">
-        <div class="kpi">
-          <small>Số dư ví</small>
-          <b>{{ balance }}</b>
-        </div>
-        <div class="kpi">
-          <small>Trong giỏ hàng</small>
-          <b>{{ total_cart_item }} sản phẩm</b>
-        </div>
+      <div class="product-grid">
+        {% for p in products %}
+          <div class="product-card">
+
+            <!-- ✅ Click ảnh -> detail -->
+            <a class="product-img" href="{% url 'product_detail' p.product_id %}">
+              {% if p.image %}
+                <img src="{{ p.image.url }}" alt="{{ p.product_name }}">
+              {% else %}
+                <div class="muted">Chưa có ảnh</div>
+              {% endif %}
+            </a>
+
+            <!-- ✅ Click tên -> detail -->
+            <a class="product-name" href="{% url 'product_detail' p.product_id %}">
+              {{ p.product_name }}
+            </a>
+
+            <div class="product-meta">
+              <div class="product-price">{{ p.price|vnd }}</div>
+              <div class="product-cat">{{ p.category.category_name }}</div>
+            </div>
+
+            <div class="product-desc">{{ p.description }}</div>
+            <div class="muted" style="font-size:12px;">Giao nhanh • Đổi trả 7 ngày</div>
+
+            {% if request.session.account_id %}
+              <a class="btn primary product-btn" href="{% url 'add_to_cart' p.product_id %}">
+                Thêm vào giỏ
+              </a>
+            {% else %}
+              <a class="btn secondary product-btn" href="{% url 'to_login_page' %}">
+                Đăng nhập để mua
+              </a>
+            {% endif %}
+          </div>
+        {% empty %}
+          <p class="muted">Chưa có sản phẩm nào. Vào Admin để thêm sản phẩm.</p>
+        {% endfor %}
       </div>
     </section>
+
+    <!-- Logged-in account summary -->
+    {% if request.session.account_id %}
+      <section class="account">
+        <div>
+          <div style="color:var(--muted); font-size:13px;">Xin chào</div>
+          <div style="font-size:18px; font-weight:900;">{{ account.username }}</div>
+        </div>
+
+        <div class="kpis">
+          <div class="kpi">
+            <small>Số dư ví</small>
+            <b>{{ balance|vnd }}</b>
+          </div>
+          <div class="kpi">
+            <small>Trong giỏ hàng</small>
+            <b>{{ total_cart_item }} sản phẩm</b>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+          <a class="btn secondary" href="{% url 'wallet_topup' %}">Nạp ví</a>
+          <a class="btn secondary" href="{% url 'my_orders' %}">Xem đơn hàng</a>
+          <a class="btn primary" href="{% url 'to_view_cart' %}">Đi tới giỏ hàng</a>
+        </div>
+      </section>
     {% endif %}
   </main>
 </body>

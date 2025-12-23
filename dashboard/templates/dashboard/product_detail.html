@@ -1,0 +1,213 @@
+{% load static %}
+{% load formatters %}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ p.product_name }} - MilkStore</title>
+  <link rel="stylesheet" href="{% static 'css/home.css' %}">
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <a class="logo" href="{% url 'dashboard' %}">
+      <span class="logo-badge">M</span><span>MilkStore</span>
+    </a>
+
+    <div class="actions">
+      <a class="btn secondary" href="{% url 'dashboard' %}">← Trang chủ</a>
+
+      <a class="cart" href="{% url 'to_view_cart' %}">
+        🛒 Giỏ hàng <span class="badge">{{ total_cart_item|default:0 }}</span>
+      </a>
+
+      {% if request.session.account_id %}
+        <span class="chip">Ví: <b>{{ balance|vnd }}</b></span>
+        <a class="btn secondary" href="{% url 'my_orders' %}">Đơn hàng</a>
+      {% else %}
+        <a class="btn secondary" href="{% url 'to_login_page' %}">Đăng nhập</a>
+        <a class="btn primary" href="{% url 'to_register_page' %}">Đăng kí</a>
+      {% endif %}
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="pd-card">
+    <div class="pd-grid">
+
+      <!-- LEFT: gallery -->
+      <div class="pd-gallery">
+        <div class="pd-thumbs">
+          {% if p.image %}
+            <button type="button" class="pd-thumb is-active" data-src="{{ p.image.url }}">
+              <img src="{{ p.image.url }}" alt="{{ p.product_name }}">
+            </button>
+          {% endif %}
+
+          {# ✅ ẢNH PHỤ THẬT: lấy từ ProductImage (related_name="gallery") #}
+          {% for g in p.gallery.all %}
+            {% if g.image %}
+              <button type="button" class="pd-thumb {% if not p.image and forloop.first %}is-active{% endif %}" data-src="{{ g.image.url }}">
+                <img src="{{ g.image.url }}" alt="{{ p.product_name }}">
+              </button>
+            {% endif %}
+          {% endfor %}
+
+          {% if not p.image and not p.gallery.all %}
+            <div class="muted" style="font-size:13px;">(Chưa có ảnh)</div>
+          {% endif %}
+        </div>
+
+        <div class="pd-main">
+          {% if p.image %}
+            <img id="pdMainImg" src="{{ p.image.url }}" alt="{{ p.product_name }}">
+          {% elif p.gallery.all %}
+            {# nếu không có ảnh chính thì lấy ảnh phụ đầu tiên làm ảnh main #}
+            <img id="pdMainImg" src="{{ p.gallery.all.0.image.url }}" alt="{{ p.product_name }}">
+          {% else %}
+            <div class="muted" style="height:260px; display:grid; place-items:center; border:1px dashed rgba(15,23,42,.18); border-radius:14px;">
+              No image
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- RIGHT: info -->
+      <div class="pd-info">
+        <div class="pd-cat">{{ p.category.category_name|default:"(Chưa có danh mục)" }}</div>
+        <h1 class="pd-title">{{ p.product_name }}</h1>
+
+        <div class="pd-price-row">
+          <div class="pd-price">{{ p.price|vnd }}</div>
+
+          <div class="pd-badges">
+            {% if p.is_genuine %}
+              <span class="pd-badge">✅ Chính hãng</span>
+            {% endif %}
+            {% if p.is_fast_ship %}
+              <span class="pd-badge">🚚 Giao nhanh</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="pd-short">
+          {{ p.description|default:"Sản phẩm chính hãng, phù hợp cho bé và gia đình. Hỗ trợ đổi trả 7 ngày." }}
+        </div>
+
+        <div class="pd-actions">
+          {% if request.session.account_id %}
+            <a class="btn primary" href="{% url 'add_to_cart' p.product_id %}">Thêm vào giỏ</a>
+            <a class="btn secondary" href="{% url 'checkout' %}">Mua ngay</a>
+          {% else %}
+            <a class="btn primary" href="{% url 'to_login_page' %}">Đăng nhập để mua</a>
+          {% endif %}
+        </div>
+
+        <div class="pd-meta">
+          <div class="pd-meta-item">
+            <div class="muted">Gợi ý</div>
+            <b>{{ p.hint_text|default:"Uống ngon hơn khi lạnh" }}</b>
+          </div>
+          <div class="pd-meta-item">
+            <div class="muted">Bảo quản</div>
+            <b>{{ p.storage_short|default:"Nơi khô ráo, thoáng mát" }}</b>
+          </div>
+          <div class="pd-meta-item">
+            <div class="muted">Đổi trả</div>
+            <b>{{ p.return_policy|default:"7 ngày nếu lỗi" }}</b>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DETAILS -->
+    <div class="pd-divider"></div>
+
+    <div class="pd-detail-grid">
+      <div class="pd-block">
+        <h3>Mô tả sản phẩm</h3>
+        <p class="muted" style="line-height:1.7; margin:0;">
+          {{ p.description|default:"Sản phẩm sữa chính hãng, đầy đủ dinh dưỡng. Phù hợp nhiều đối tượng sử dụng." }}
+        </p>
+      </div>
+
+      <div class="pd-block">
+        <h3>Hướng dẫn bảo quản</h3>
+        <div class="pd-list muted" style="line-height:1.7;">
+          {{ p.storage_guide|default:"Bảo quản nơi khô ráo và thoáng mát.\nĐóng kín sau khi mở.\nNgon hơn khi uống lạnh."|linebreaksbr }}
+        </div>
+      </div>
+
+      <div class="pd-block">
+        <h3>Thông tin dinh dưỡng</h3>
+        <div class="pd-nutri">
+          <div><span class="muted">Năng lượng</span><b>{{ p.energy_kcal|default:0 }} kcal</b></div>
+          <div><span class="muted">Chất đạm</span><b>{{ p.protein_g|floatformat:1 }} g</b></div>
+          <div><span class="muted">Chất béo</span><b>{{ p.fat_g|floatformat:1 }} g</b></div>
+          <div><span class="muted">Carb</span><b>{{ p.carb_g|floatformat:1 }} g</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RELATED -->
+  <section class="section">
+    <div class="section-head">
+      <h2>Sản phẩm liên quan</h2>
+      <span class="muted">Cùng danh mục</span>
+    </div>
+
+    <div class="product-grid">
+      {% for rp in related %}
+        <div class="product-card">
+          <a class="product-img" href="{% url 'product_detail' rp.product_id %}">
+            {% if rp.image %}
+              <img src="{{ rp.image.url }}" alt="{{ rp.product_name }}">
+            {% else %}
+              <div class="muted" style="display:grid;place-items:center;height:100%;">No image</div>
+            {% endif %}
+          </a>
+
+          <a class="product-name" href="{% url 'product_detail' rp.product_id %}">
+            {{ rp.product_name }}
+          </a>
+
+          <div class="product-meta">
+            <div class="product-price">{{ rp.price|vnd }}</div>
+            <div class="product-cat">{{ rp.category.category_name }}</div>
+          </div>
+
+          <div class="product-desc">{{ rp.description }}</div>
+
+          {% if request.session.account_id %}
+            <a class="btn primary product-btn" href="{% url 'add_to_cart' rp.product_id %}">Thêm vào giỏ</a>
+          {% else %}
+            <a class="btn secondary product-btn" href="{% url 'to_login_page' %}">Đăng nhập để mua</a>
+          {% endif %}
+        </div>
+      {% empty %}
+        <p class="muted">Chưa có sản phẩm liên quan.</p>
+      {% endfor %}
+    </div>
+  </section>
+</main>
+
+<script>
+  // gallery thumbnails -> swap main image
+  const mainImg = document.getElementById("pdMainImg");
+  document.querySelectorAll(".pd-thumb").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".pd-thumb").forEach(b => b.classList.remove("is-active"));
+      btn.classList.add("is-active");
+      const src = btn.getAttribute("data-src");
+      if (src && mainImg) mainImg.src = src;
+    });
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,185 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Thêm sản phẩm</title>
+  <link rel="stylesheet" href="{% static 'css/admin_page.css' %}">
+</head>
+<body>
+
+<div class="container">
+  <div class="topbar">
+    <div class="brand"><a href="{% url 'admin_products' %}">← Sản phẩm</a></div>
+    <div class="muted">Xin chào <b>{{ account.username }}</b></div>
+  </div>
+
+  <div class="page-card">
+    <h1>Thêm sản phẩm</h1>
+
+    {% if error_message %}
+      <div class="alert">{{ error_message }}</div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="form-card">
+      {% csrf_token %}
+
+      <div class="form-grid">
+        <div class="field">
+          <label>Tên sản phẩm</label>
+          <input type="text" name="product_name" required>
+        </div>
+
+        <div class="field">
+          <label>Giá</label>
+          <input type="number" step="0.01" name="price" required>
+        </div>
+
+        <div class="field">
+          <label>Danh mục</label>
+          <select name="category_id" required>
+            <option value="">-- Chọn danh mục --</option>
+            {% for c in categories %}
+              <option value="{{ c.category_id }}">{{ c.category_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- ✅ MAIN IMAGE with preview -->
+        <div class="field">
+          <label>Ảnh chính</label>
+
+          <div class="img-preview-wrap" style="margin-bottom:10px;">
+            <img id="mainImgPreview" class="img-preview" style="display:none;" alt="main preview">
+            <div id="mainImgHint" class="muted" style="font-size:12px;">Chưa chọn ảnh</div>
+          </div>
+
+          <input id="mainImgInput" type="file" name="image" accept="image/*">
+          <div class="muted" style="font-size:12px;">Chọn ảnh sẽ hiển thị preview ngay</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Mô tả</label>
+        <textarea name="description" rows="3" placeholder="Mô tả ngắn..."></textarea>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label>Badge</label>
+          <div class="check-row">
+            <label><input type="checkbox" name="is_genuine" checked> Chính hãng</label>
+            <label><input type="checkbox" name="is_fast_ship" checked> Giao nhanh</label>
+          </div>
+        </div>
+
+        <!-- ✅ GALLERY with preview -->
+        <div class="field">
+          <label>Ảnh phụ (gallery)</label>
+          <input id="galleryInput" type="file" name="gallery_images" accept="image/*" multiple>
+
+          <div id="galleryPreview" class="gallery-preview" style="display:none;"></div>
+
+          <div class="muted" style="font-size:12px;">Giữ Ctrl để chọn nhiều ảnh (preview sẽ hiện bên dưới)</div>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label>Gợi ý</label>
+          <input type="text" name="hint_text" placeholder="Uống ngon hơn khi lạnh">
+        </div>
+        <div class="field">
+          <label>Bảo quản (ngắn)</label>
+          <input type="text" name="storage_short" placeholder="Nơi khô ráo, thoáng mát">
+        </div>
+        <div class="field">
+          <label>Đổi trả</label>
+          <input type="text" name="return_policy" placeholder="7 ngày nếu lỗi">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Hướng dẫn bảo quản (mỗi dòng 1 gạch đầu dòng)</label>
+        <textarea name="storage_guide" rows="4">Bảo quản nơi khô ráo và thoáng mát.
+Đóng kín sau khi mở.
+Ngon hơn khi uống lạnh.</textarea>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label>Năng lượng (kcal)</label>
+          <input type="number" name="energy_kcal" value="60">
+        </div>
+        <div class="field">
+          <label>Protein (g)</label>
+          <input type="number" step="0.1" name="protein_g" value="3.0">
+        </div>
+        <div class="field">
+          <label>Fat (g)</label>
+          <input type="number" step="0.1" name="fat_g" value="3.0">
+        </div>
+        <div class="field">
+          <label>Carb (g)</label>
+          <input type="number" step="0.1" name="carb_g" value="4.0">
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn primary" type="submit">Lưu</button>
+        <a class="btn secondary" href="{% url 'admin_products' %}">Hủy</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // ✅ main image preview
+  (function(){
+    const input = document.getElementById("mainImgInput");
+    const preview = document.getElementById("mainImgPreview");
+    const hint = document.getElementById("mainImgHint");
+    if (!input || !preview) return;
+
+    input.addEventListener("change", () => {
+      const f = input.files && input.files[0];
+      if (!f) {
+        preview.style.display = "none";
+        if (hint) hint.style.display = "block";
+        return;
+      }
+      preview.src = URL.createObjectURL(f);
+      preview.style.display = "block";
+      if (hint) hint.style.display = "none";
+    });
+  })();
+
+  // ✅ gallery preview multiple
+  (function(){
+    const input = document.getElementById("galleryInput");
+    const box = document.getElementById("galleryPreview");
+    if (!input || !box) return;
+
+    input.addEventListener("change", () => {
+      box.innerHTML = "";
+      const files = Array.from(input.files || []);
+      if (!files.length){
+        box.style.display = "none";
+        return;
+      }
+      files.forEach(f => {
+        const img = document.createElement("img");
+        img.src = URL.createObjectURL(f);
+        img.alt = "gallery preview";
+        box.appendChild(img);
+      });
+      box.style.display = "grid";
+    });
+  })();
+</script>
+
+</body>
+</html>

@@ -1,108 +1,75 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="vi">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Giỏ hàng</title>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Giỏ hàng</title>
+  <link rel="stylesheet" href="{% static 'css/home.css' %}">
+</head>
+<body>
 
-    <style>
-      body {
-        font-family: Arial, Helvetica, sans-serif;
-        background-color: #f5f7fa;
-        margin: 0;
-        padding: 0;
-      }
+<header class="header">
+  <div class="header-inner">
+    <a class="logo" href="{% url 'dashboard' %}">
+      <span class="logo-badge">M</span><span>MilkStore</span>
+    </a>
 
-      .container {
-        max-width: 900px;
-        margin: 60px auto;
-        background: white;
-        padding: 25px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      }
-
-      h1 {
-        text-align: center;
-        margin-bottom: 25px;
-      }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-      }
-
-      th,
-      td {
-        padding: 12px;
-        border: 1px solid #ddd;
-        text-align: center;
-      }
-
-      th {
-        background-color: #4f46e5;
-        color: white;
-      }
-
-      tr:nth-child(even) {
-        background-color: #f9fafb;
-      }
-
-      .empty {
-        text-align: center;
-        color: #666;
-        margin-top: 20px;
-      }
-
-      .btn {
-        display: inline-block;
-        margin-top: 20px;
-        padding: 10px 14px;
-        background-color: #64748b;
-        color: white;
-        text-decoration: none;
-        border-radius: 6px;
-      }
-
-      .btn:hover {
-        background-color: #475569;
-      }
-    </style>
-  </head>
-
-  <body>
-    <div class="container">
-      <h1>Giỏ hàng của bạn</h1>
-
-      {% if cart_items %}
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Tên sản phẩm</th>
-            <th>Giá</th>
-            <th>Số lượng</th>
-            <th>Thành tiền</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in cart_items %}
-          <tr>
-            <td>{{ forloop.counter }}</td>
-            <td>{{ item.product.product_name }}</td>
-            <td>{{ item.product.price }}</td>
-            <td>{{ item.quantity }}</td>
-            <td>
-              {{ item.subtotal}}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      {% else %}
-      <p class="empty">Giỏ hàng trống</p>
-      {% endif %}
-
-      <a href="{% url 'dashboard' %}" class="btn">← Quay về trang chủ</a>
+    <div class="actions">
+      <a class="cart" href="{% url 'to_view_cart' %}">
+        🛒 Giỏ hàng <span class="badge">{{ total_cart_item|default:0 }}</span>
+      </a>
+      <a class="btn secondary" href="{% url 'dashboard' %}">Tiếp tục mua</a>
     </div>
-  </body>
+  </div>
+</header>
+
+<main class="wrap">
+  <h2 style="margin: 10px 0 12px;">Giỏ hàng</h2>
+
+  {% if cart_items %}
+    <div class="grid" style="grid-template-columns: 1fr; gap:12px;">
+      {% for item in cart_items %}
+        <div class="card" style="display:flex; gap:12px; align-items:center;">
+          <div style="width:90px; height:90px; border-radius:12px; overflow:hidden; border:1px solid rgba(15,23,42,.10); background:#fff;">
+            <img src="{{ item.product.image.url }}" style="width:100%; height:100%; object-fit:cover;">
+          </div>
+
+          <div style="flex:1;">
+            <div style="font-weight:900;">{{ item.product.product_name }}</div>
+            <div style="color:var(--muted); font-size:13px;">{{ item.product.category.category_name }}</div>
+
+            <div style="margin-top:6px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+              <span>Giá: <b>{{ item.product.price }}</b></span>
+              <span>Tạm tính: <b>{{ item.subtotal }}</b></span>
+
+              <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+                <a class="btn secondary" href="{% url 'cart_dec' item.product.product_id %}">−</a>
+                <b style="min-width:24px; text-align:center;">{{ item.quantity }}</b>
+                <a class="btn secondary" href="{% url 'cart_inc' item.product.product_id %}">+</a>
+                <a class="btn" style="border-color: rgba(239,68,68,.25); color:#b91c1c;"
+                   href="{% url 'cart_remove' item.product.product_id %}">
+                  Xóa
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="card" style="margin-top:14px; display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <div style="color:var(--muted); font-size:13px;">Tổng tiền</div>
+        <div style="font-size:20px; font-weight:900;">{{ cart_total }} đ</div>
+      </div>
+      <a class="btn primary" href="{% url 'checkout' %}">Thanh toán</a>
+    </div>
+
+  {% else %}
+    <p style="color:var(--muted);">Giỏ hàng trống.</p>
+  {% endif %}
+</main>
+
+</body>
 </html>

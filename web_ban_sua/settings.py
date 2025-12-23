@@ -72,7 +72,7 @@ WSGI_APPLICATION = 'web_ban_sua.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-'''Hưng - muốn đổi thành của mình thì kéo 3 dấu nháy ở cuối xuống dưới cùng'''
+'''Hưng - muốn đổi thành của mình thì kéo 3 dấu nháy ở cuối xuống dưới cùng
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
@@ -83,10 +83,10 @@ DATABASES = {
         'PORT': '3307',
     }
 }
-
+'''
 #kéo xuống chỗ này 
 
-'''
+''' '''
 #Tự sửa thành django db của mình nhé
 DATABASES = {
     'default': {
@@ -98,7 +98,7 @@ DATABASES = {
         'PORT': '3306',
     }
 }
-'''
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -122,19 +122,20 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'UTC'
-
+LANGUAGE_CODE = 'vi'
+TIME_ZONE = 'Asia/Ho_Chi_Minh'
 USE_I18N = True
-
 USE_TZ = True
+
 
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

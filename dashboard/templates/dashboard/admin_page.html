@@ -1,217 +1,252 @@
+{% load static %}
+{% load tz %}
+{% load formatters %}
+
 <!DOCTYPE html>
 <html lang="vi">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Trang quản trị</title>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trang quản trị</title>
+  <link rel="stylesheet" href="{% static 'css/admin_page.css' %}">
+</head>
 
-    <style>
-      body {
-        font-family: Arial, Helvetica, sans-serif;
-        background-color: #f5f7fa;
-        margin: 0;
-        padding: 0;
-      }
-
-      .container {
-        max-width: 100%;
-        max-height: 100vh;
-        margin: 60px auto;
-        background: white;
-        padding: 25px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      }
-
-      h1 {
-        text-align: center;
-      }
-
-      /* TAB BUTTON */
-      .tabs {
-        display: flex;
-        margin-bottom: 20px;
-        border-bottom: 2px solid #ddd;
-      }
-
-      .tab-btn {
-        padding: 12px 20px;
-        cursor: pointer;
-        border: none;
-        background: none;
-        font-size: 16px;
-        font-weight: bold;
-        color: #555;
-      }
-
-      .tab-btn.active {
-        color: #4f46e5;
-        border-bottom: 3px solid #4f46e5;
-      }
-
-      /* TAB CONTENT */
-      .tab-content {
-        display: none;
-      }
-
-      .tab-content.active {
-        display: block;
-      }
-      /* OVERLAY */
-      .modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000;
-      }
-
-      /* MODAL BOX */
-      .modal {
-        background: white;
-        padding: 25px;
-        width: 400px;
-        border-radius: 8px;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-        position: relative;
-      }
-
-      .modal h3 {
-        margin-top: 0;
-      }
-
-      /* CLOSE BUTTON */
-      .modal .close-btn {
-        position: absolute;
-        top: 10px;
-        right: 14px;
-        cursor: pointer;
-        font-size: 20px;
-        color: #555;
-      }
-
-      /* SHOW */
-      .modal-overlay.active {
-        display: flex;
-      }
-    </style>
-  </head>
-
-  <body>
-    <div class="container">
-      <a href="{% url 'dashboard' %}">
-        <h1>Trang chủ</h1>
-      </a>
-
-      <h1>Trang quản trị</h1>
-
-      <!-- TAB BUTTONS -->
-      <div class="tabs">
-        <button class="tab-btn active" onclick="openTab('users', this)">
-          Quản lý người dùng
-        </button>
-        <button class="tab-btn" onclick="openTab('products', this)">
-          Quản lý sản phẩm
-        </button>
-        <button class="tab-btn" onclick="openTab('categories', this)">
-          Quản lý danh mục
-        </button>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div class="brand">
+        <a href="{% url 'dashboard' %}">← Trang chủ</a>
       </div>
+      <div class="muted">
+        {% if account %}Xin chào <b>{{ account.username }}</b>{% endif %}
+      </div>
+    </div>
 
-      <!-- TAB CONTENT -->
-      <div id="users" class="tab-content active">
+    <h1>Trang quản trị</h1>
+
+    <!-- TAB BUTTONS -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="openTab(event, 'users')">Quản lý người dùng</button>
+      <button class="tab-btn" onclick="openTab(event, 'products')">Quản lý sản phẩm</button>
+      <button class="tab-btn" onclick="openTab(event, 'categories')">Quản lý danh mục</button>
+      <button class="tab-btn" onclick="openTab(event, 'orders')">Quản lý đơn hàng</button>
+    </div>
+
+    <!-- TAB CONTENT -->
+    <div id="users" class="tab-content active">
+      <div class="section-head">
         <h2>Quản lý người dùng</h2>
-        <button class="btn" onclick="openModal('userModal')">
-          Thêm người dùng
-        </button>
+        <button class="btn primary" onclick="openModal('userModal')">+ Thêm người dùng</button>
       </div>
+      <p class="muted">Chưa làm phần này thì để sau cũng được.</p>
+    </div>
 
-      <div id="products" class="tab-content">
+    <div id="products" class="tab-content">
+      <div class="section-head">
         <h2>Quản lý sản phẩm</h2>
-        <button class="btn" onclick="openModal('productModal')">
-          Thêm sản phẩm
-        </button>
+        <a class="btn primary" href="{% url 'admin_products' %}">Mở danh sách sản phẩm</a>
       </div>
+      <p class="muted">Trang riêng có search / filter / phân trang / sửa / xóa.</p>
+  </div>
 
-      <div id="categories" class="tab-content">
-        <h2>Quản lý danh mục</h2>
-        <button class="btn" onclick="openModal('productModal')">
-          Thêm danh mục
-        </button>
-      </div>
+   <div id="categories" class="tab-content">
+  <div class="section-head">
+    <div>
+      <h2>Quản lý danh mục</h2>
+      <p class="muted">Bạn cần tạo Category trước để thêm Product.</p>
     </div>
 
-    <script>
-      function openTab(tabId) {
-        // Ẩn tất cả content
-        const contents = document.querySelectorAll(".tab-content");
-        contents.forEach((c) => c.classList.remove("active"));
-
-        // Bỏ active tất cả button
-        const buttons = document.querySelectorAll(".tab-btn");
-        buttons.forEach((b) => b.classList.remove("active"));
-
-        // Hiện tab được chọn
-        document.getElementById(tabId).classList.add("active");
-
-        // Active button tương ứng
-        event.target.classList.add("active");
-      }
-
-      function openModal(id) {
-        document.getElementById(id).classList.add("active");
-      }
-
-      function closeModal(event) {
-        // Click nền mờ hoặc nút X
-        if (!event || event.target.classList.contains("modal-overlay")) {
-          document
-            .querySelectorAll(".modal-overlay")
-            .forEach((m) => m.classList.remove("active"));
-        }
-      }
-    </script>
-    <!-- Thêm người dùng -->
-    <div id="userModal" class="modal-overlay" onclick="closeModal(event)">
-      <div class="modal">
-        <span class="close-btn" onclick="closeModal()">×</span>
-        <h3>Thêm người dùng</h3>
-
-        <form>
-          <label>Username</label><br />
-          <input type="text" /><br /><br />
-
-          <label>Password</label><br />
-          <input type="password" /><br /><br />
-
-          <button class="btn">Lưu</button>
-        </form>
-      </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <a class="btn secondary" href="{% url 'admin_categories' %}">Xem danh sách</a>
+      <a class="btn primary" href="{% url 'admin_category_create' %}">+ Thêm danh mục</a>
     </div>
-    <!---->
+  </div>
 
-    <!-- thêm sản phẩm -->
-    <div id="productModal" class="modal-overlay" onclick="closeModal(event)">
-      <div class="modal">
-        <span class="close-btn" onclick="closeModal()">×</span>
-        <h3>Thêm sản phẩm</h3>
+  {% if recent_categories %}
+    <div class="muted" style="margin-top:12px;">Gần đây ({{ recent_categories|length }} danh mục):</div>
 
-        <form>
-          <label>Tên sản phẩm</label><br />
-          <input type="text" /><br /><br />
+    <div style="margin-top:10px; display:grid; gap:12px;">
+      {% for c in recent_categories %}
+        <div class="card" style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+          <div>
+            <div style="font-weight:900;">{{ c.category_name }}</div>
+            <div class="muted" style="font-size:13px;">ID: {{ c.category_id }}</div>
+          </div>
 
-          <label>Giá</label><br />
-          <input type="number" /><br /><br />
-
-          <button class="btn">Lưu</button>
-        </form>
-      </div>
+          <div style="display:flex; gap:10px;">
+            <a class="btn secondary" href="{% url 'admin_category_edit' c.category_id %}">Sửa</a>
+            <form method="post" action="{% url 'admin_category_delete' c.category_id %}" style="margin:0;">
+              {% csrf_token %}
+              <button class="btn" type="submit" onclick="return confirm('Xóa danh mục này?')">Xóa</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
     </div>
-    <!---->
-  </body>
+
+    <div class="muted" style="margin-top:10px; font-size:13px;">
+      (Hiển thị 8 danh mục gần đây. Bấm “Xem danh sách” để xem đầy đủ.)
+    </div>
+  {% else %}
+    <div class="muted" style="margin-top:12px;">Chưa có danh mục nào.</div>
+  {% endif %}
+</div>
+
+  <script>
+    function openTab(e, tabId) {
+      document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+
+      document.getElementById(tabId).classList.add("active");
+      e.currentTarget.classList.add("active");
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.add("active");
+    }
+
+    function closeModal(event) {
+      if (!event || event.target.classList.contains("modal-overlay")) {
+        document.querySelectorAll(".modal-overlay").forEach(m => m.classList.remove("active"));
+      }
+    }
+  </script>
+
+  <!-- User modal -->
+  <div id="userModal" class="modal-overlay" onclick="closeModal(event)">
+    <div class="modal">
+      <span class="close-btn" onclick="closeModal()">×</span>
+      <h3>Thêm người dùng</h3>
+      <p class="muted">Phần này làm sau (vì chưa có view xử lý).</p>
+    </div>
+  </div>
+
+  <!-- ✅ Product modal (Hướng 2: nhiều field + gallery) -->
+  <div id="productModal" class="modal-overlay" onclick="closeModal(event)">
+    <div class="modal">
+      <span class="close-btn" onclick="closeModal()">×</span>
+      <h3>Thêm sản phẩm</h3>
+
+      {% if error_message %}
+        <div class="alert">{{ error_message }}</div>
+      {% endif %}
+
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="form-grid">
+          <div class="field">
+            <label>Tên sản phẩm</label>
+            <input type="text" name="product_name" required placeholder="VD: Sữa bột Aptamil 900g">
+          </div>
+
+          <div class="field">
+            <label>Giá</label>
+            <input type="number" step="0.01" name="price" required placeholder="VD: 325000">
+          </div>
+
+          <div class="field">
+            <label>Danh mục</label>
+            <select name="category_id" required>
+              <option value="">-- Chọn danh mục --</option>
+              {% for c in categories %}
+                <option value="{{ c.category_id }}">{{ c.category_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Ảnh sản phẩm</label>
+            <input type="file" name="image" accept="image/*" required>
+          </div>
+        </div>
+
+        <div class="field" style="margin-top:12px;">
+          <label>Mô tả</label>
+          <input type="text" name="description" placeholder="VD: Sữa nhập khẩu, phù hợp 1-3 tuổi...">
+        </div>
+
+        <!-- ✅ NEW: badges -->
+        <div class="form-grid" style="margin-top:12px;">
+          <div class="field">
+            <label style="display:flex; gap:8px; align-items:center;">
+              <input type="checkbox" name="is_genuine" checked> Chính hãng
+            </label>
+          </div>
+          <div class="field">
+            <label style="display:flex; gap:8px; align-items:center;">
+              <input type="checkbox" name="is_fast_ship" checked> Giao nhanh
+            </label>
+          </div>
+        </div>
+
+        <!-- ✅ NEW: 3 ô gợi ý -->
+        <div class="form-grid" style="margin-top:12px;">
+          <div class="field">
+            <label>Gợi ý</label>
+            <input type="text" name="hint_text" placeholder="VD: Uống ngon hơn khi lạnh">
+          </div>
+          <div class="field">
+            <label>Bảo quản (ngắn)</label>
+            <input type="text" name="storage_short" placeholder="VD: Nơi khô ráo, thoáng mát">
+          </div>
+          <div class="field">
+            <label>Đổi trả</label>
+            <input type="text" name="return_policy" placeholder="VD: 7 ngày nếu lỗi">
+          </div>
+        </div>
+
+        <!-- ✅ NEW: hướng dẫn bảo quản (nhiều dòng) -->
+        <div class="field" style="margin-top:12px;">
+          <label>Hướng dẫn bảo quản (mỗi dòng 1 ý)</label>
+          <textarea name="storage_guide" rows="4" placeholder="VD:
+Bảo quản nơi khô ráo và thoáng mát.
+Đóng kín sau khi mở.
+Ngon hơn khi uống lạnh."></textarea>
+        </div>
+
+        <!-- ✅ NEW: dinh dưỡng -->
+        <div class="form-grid" style="margin-top:12px;">
+          <div class="field">
+            <label>Năng lượng (kcal)</label>
+            <input type="number" name="energy_kcal" value="60">
+          </div>
+          <div class="field">
+            <label>Chất đạm (g)</label>
+            <input type="number" step="0.1" name="protein_g" value="3.0">
+          </div>
+          <div class="field">
+            <label>Chất béo (g)</label>
+            <input type="number" step="0.1" name="fat_g" value="3.0">
+          </div>
+          <div class="field">
+            <label>Carb (g)</label>
+            <input type="number" step="0.1" name="carb_g" value="4.0">
+          </div>
+        </div>
+
+        <!-- ✅ NEW: ảnh phụ (gallery) -->
+        <div class="field" style="margin-top:12px;">
+          <label>Ảnh phụ (gallery) - chọn nhiều ảnh</label>
+          <input type="file" name="gallery_images" accept="image/*" multiple>
+        </div>
+
+        <div class="form-actions" style="margin-top:14px;">
+          <button class="btn primary" type="submit">Lưu</button>
+          <button class="btn" type="button" onclick="closeModal()">Hủy</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Category modal -->
+  <div id="categoryModal" class="modal-overlay" onclick="closeModal(event)">
+    <div class="modal">
+      <span class="close-btn" onclick="closeModal()">×</span>
+      <h3>Thêm danh mục</h3>
+      <p class="muted">Bạn muốn mình viết luôn view + form tạo Category không?</p>
+    </div>
+  </div>
+
+</body>
 </html>
