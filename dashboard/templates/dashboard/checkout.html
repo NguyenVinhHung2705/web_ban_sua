@@ -1,4 +1,5 @@
 {% load static %}
+{% load formatters %}
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -11,11 +12,16 @@
 
 <header class="header">
   <div class="header-inner">
+    <!-- Logo về trang chủ -->
     <a class="logo" href="{% url 'dashboard' %}">
       <span class="logo-badge">M</span><span>MilkStore</span>
     </a>
+
+    <!-- Nhóm nút điều hướng -->
     <div class="actions">
-      <a class="cart" href="{% url 'to_view_cart' %}">🛒 Giỏ hàng <span class="badge">{{ total_cart_item|default:0 }}</span></a>
+      <a class="cart" href="{% url 'to_view_cart' %}">
+        🛒 Giỏ hàng <span class="badge">{{ total_cart_item|default:0 }}</span>
+      </a>
       <a class="btn secondary" href="{% url 'my_orders' %}">Đơn hàng</a>
     </div>
   </div>
@@ -25,50 +31,75 @@
 
   <h2 style="margin:10px 0 12px;">Xác nhận thanh toán</h2>
 
-  <form method="post" style="display:grid; gap:12px;">
+  <!-- Form xác nhận thanh toán: POST + CSRF -->
+  <form method="post" style="display:grid; gap:12px;" autocomplete="off">
     {% csrf_token %}
 
+    <!-- ===== THÔNG TIN NGƯỜI NHẬN ===== -->
     <div style="margin-top:4px; display:grid; gap:10px;">
+
       <div>
-        <div style="color:var(--muted); font-size:13px;">Họ và tên</div>
-        <input name="receiver_name" required
+        <label for="receiver_name" style="color:var(--muted); font-size:13px;">Họ và tên</label>
+        <input
+          id="receiver_name"
+          name="receiver_name"
+          required
           value="{{ receiver_name|default:'' }}"
-          style="width:100%; padding:12px; border-radius:12px; border:1px solid rgba(15,23,42,.12);" />
+          style="width:100%; padding:12px; border-radius:12px; border:1px solid rgba(15,23,42,.12);"
+        />
       </div>
 
       <div>
-        <div style="color:var(--muted); font-size:13px;">Số điện thoại</div>
-        <input name="receiver_phone" required
+        <label for="receiver_phone" style="color:var(--muted); font-size:13px;">Số điện thoại</label>
+        <!-- type=tel để hợp với dữ liệu số điện thoại -->
+        <input
+          id="receiver_phone"
+          type="tel"
+          name="receiver_phone"
+          required
           value="{{ receiver_phone|default:'' }}"
-          style="width:100%; padding:12px; border-radius:12px; border:1px solid rgba(15,23,42,.12);" />
+          style="width:100%; padding:12px; border-radius:12px; border:1px solid rgba(15,23,42,.12);"
+        />
       </div>
 
       <div>
-        <div style="color:var(--muted); font-size:13px;">Địa chỉ giao hàng</div>
-        <input name="receiver_address" required
+        <label for="receiver_address" style="color:var(--muted); font-size:13px;">Địa chỉ giao hàng</label>
+        <input
+          id="receiver_address"
+          name="receiver_address"
+          required
           value="{{ receiver_address|default:'' }}"
-          style="width:100%; padding:12px; border-radius:12px; border:1px solid rgba(15,23,42,.12);" />
+          style="width:100%; padding:12px; border-radius:12px; border:1px solid rgba(15,23,42,.12);"
+        />
       </div>
+
     </div>
 
+    <!-- ===== ERROR MESSAGE (nếu có) ===== -->
     {% if error_message %}
       <div class="card" style="border:1px solid rgba(239,68,68,.25); background:rgba(239,68,68,.06); color:#991b1b;">
         {{ error_message }}
       </div>
     {% endif %}
 
+    <!-- ===== SUMMARY: WALLET + TOTAL ===== -->
     <div class="card">
       <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+
         <div>
           <div style="color:var(--muted); font-size:13px;">Số dư ví</div>
-          <div style="font-weight:900; font-size:18px;">{{ balance }}</div>
+          <!-- balance được format bằng filter vnd -->
+          <div style="font-weight:900; font-size:18px;">{{ balance|vnd }}</div>
         </div>
+
         <div>
           <div style="color:var(--muted); font-size:13px;">Tổng thanh toán</div>
-          <div style="font-weight:900; font-size:18px;">{{ cart_total }} đ</div>
+          <div style="font-weight:900; font-size:18px;">{{ cart_total|vnd }}</div>
         </div>
+
       </div>
 
+      <!-- Actions -->
       <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
         <button class="btn primary" type="submit">Xác nhận thanh toán</button>
         <a class="btn secondary" href="{% url 'to_view_cart' %}">Quay lại giỏ</a>
@@ -77,7 +108,6 @@
 
   </form>
 </main>
-
 
 </body>
 </html>

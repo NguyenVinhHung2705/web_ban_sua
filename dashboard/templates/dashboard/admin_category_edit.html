@@ -5,30 +5,52 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin - Sửa danh mục</title>
+
+  <!-- CSS giao diện admin -->
   <link rel="stylesheet" href="{% static 'css/admin_page.css' %}">
 </head>
 <body>
 
 <div class="container">
+  <!-- ===== TOP BAR ===== -->
   <div class="topbar">
-    <div class="brand"><a href="{% url 'admin_categories' %}">← Danh mục</a></div>
-    <div class="muted">Xin chào <b>{{ account.username }}</b></div>
+    <!-- Quay lại danh sách danh mục -->
+    <div class="brand">
+      <a href="{% url 'admin_categories' %}">← Danh mục</a>
+    </div>
+
+    <!-- Hiển thị tài khoản đang đăng nhập -->
+    <div class="muted">
+      Xin chào <b>{{ account.username }}</b>
+    </div>
   </div>
 
   <div class="page-card">
+    <!-- Tiêu đề trang: đang sửa danh mục theo id -->
     <h1>Sửa danh mục #{{ c.category_id }}</h1>
 
+    <!-- Hiển thị lỗi (nếu view truyền error_message) -->
     {% if error_message %}
       <div class="alert">{{ error_message }}</div>
     {% endif %}
 
-    <form method="post" class="form-card">
+    <!-- Form sửa danh mục (POST) -->
+    <form method="post" class="form-card" autocomplete="off">
       {% csrf_token %}
+
+      <!-- Field: tên danh mục -->
       <div class="field">
-        <label>Tên danh mục</label>
-        <input type="text" name="category_name" value="{{ c.category_name }}" required>
+        <label for="category_name">Tên danh mục</label>
+        <input
+          id="category_name"
+          type="text"
+          name="category_name"
+          value="{{ c.category_name }}"
+          required
+        >
       </div>
 
+      <!-- Nút hành động -->
       <div class="form-actions">
         <button class="btn primary" type="submit">Lưu</button>
         <a class="btn secondary" href="{% url 'admin_categories' %}">Hủy</a>

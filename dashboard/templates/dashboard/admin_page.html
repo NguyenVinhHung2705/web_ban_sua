@@ -13,240 +13,172 @@
 
 <body>
   <div class="container">
+
+    <!-- ===== TOP BAR ===== -->
     <div class="topbar">
       <div class="brand">
+        <!-- Quay lại dashboard/trang chủ -->
         <a href="{% url 'dashboard' %}">← Trang chủ</a>
       </div>
+
       <div class="muted">
-        {% if account %}Xin chào <b>{{ account.username }}</b>{% endif %}
+        <!-- account có thể null => check trước -->
+        {% if account %}
+          Xin chào <b>{{ account.username }}</b>
+        {% endif %}
       </div>
     </div>
 
     <h1>Trang quản trị</h1>
 
-    <!-- TAB BUTTONS -->
+    <!-- ===== TAB BUTTONS ===== -->
     <div class="tabs">
-      <button class="tab-btn active" onclick="openTab(event, 'users')">Quản lý người dùng</button>
-      <button class="tab-btn" onclick="openTab(event, 'products')">Quản lý sản phẩm</button>
-      <button class="tab-btn" onclick="openTab(event, 'categories')">Quản lý danh mục</button>
-      <button class="tab-btn" onclick="openTab(event, 'orders')">Quản lý đơn hàng</button>
+      <!-- active mặc định cho tab users -->
+      <button class="tab-btn active" type="button" onclick="openTab(event, 'users')">Quản lý người dùng</button>
+      <button class="tab-btn" type="button" onclick="openTab(event, 'products')">Quản lý sản phẩm</button>
+      <button class="tab-btn" type="button" onclick="openTab(event, 'categories')">Quản lý danh mục</button>
+      <button class="tab-btn" type="button" onclick="openTab(event, 'orders')">Quản lý đơn hàng</button>
     </div>
 
-    <!-- TAB CONTENT -->
+    <!-- =========================
+         TAB: USERS
+         ========================= -->
     <div id="users" class="tab-content active">
       <div class="section-head">
-        <h2>Quản lý người dùng</h2>
-        <button class="btn primary" onclick="openModal('userModal')">+ Thêm người dùng</button>
+        <div>
+          <h2>Quản lý người dùng</h2>
+          <p class="muted">Trang riêng có search / phân trang / sửa / khóa / xóa.</p>
+        </div>
+
+        <!-- Nhóm nút hành động -->
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <a class="btn secondary" href="{% url 'admin_users' %}">Xem danh sách</a>
+          <a class="btn primary" href="{% url 'admin_user_create' %}">+ Thêm người dùng</a>
+        </div>
       </div>
-      <p class="muted">Chưa làm phần này thì để sau cũng được.</p>
     </div>
 
+    <!-- =========================
+         TAB: PRODUCTS
+         ========================= -->
     <div id="products" class="tab-content">
       <div class="section-head">
-        <h2>Quản lý sản phẩm</h2>
-        <a class="btn primary" href="{% url 'admin_products' %}">Mở danh sách sản phẩm</a>
-      </div>
-      <p class="muted">Trang riêng có search / filter / phân trang / sửa / xóa.</p>
-  </div>
-
-   <div id="categories" class="tab-content">
-  <div class="section-head">
-    <div>
-      <h2>Quản lý danh mục</h2>
-      <p class="muted">Bạn cần tạo Category trước để thêm Product.</p>
-    </div>
-
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-      <a class="btn secondary" href="{% url 'admin_categories' %}">Xem danh sách</a>
-      <a class="btn primary" href="{% url 'admin_category_create' %}">+ Thêm danh mục</a>
-    </div>
-  </div>
-
-  {% if recent_categories %}
-    <div class="muted" style="margin-top:12px;">Gần đây ({{ recent_categories|length }} danh mục):</div>
-
-    <div style="margin-top:10px; display:grid; gap:12px;">
-      {% for c in recent_categories %}
-        <div class="card" style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-          <div>
-            <div style="font-weight:900;">{{ c.category_name }}</div>
-            <div class="muted" style="font-size:13px;">ID: {{ c.category_id }}</div>
-          </div>
-
-          <div style="display:flex; gap:10px;">
-            <a class="btn secondary" href="{% url 'admin_category_edit' c.category_id %}">Sửa</a>
-            <form method="post" action="{% url 'admin_category_delete' c.category_id %}" style="margin:0;">
-              {% csrf_token %}
-              <button class="btn" type="submit" onclick="return confirm('Xóa danh mục này?')">Xóa</button>
-            </form>
-          </div>
+        <div>
+          <h2>Quản lý sản phẩm</h2>
+          <p class="muted">Trang riêng có search / filter / phân trang / sửa / xóa.</p>
         </div>
-      {% endfor %}
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <a class="btn primary" href="{% url 'admin_products' %}">Mở danh sách sản phẩm</a>
+        </div>
+      </div>
     </div>
 
-    <div class="muted" style="margin-top:10px; font-size:13px;">
-      (Hiển thị 8 danh mục gần đây. Bấm “Xem danh sách” để xem đầy đủ.)
+    <!-- =========================
+         TAB: CATEGORIES
+         ========================= -->
+    <div id="categories" class="tab-content">
+      <div class="section-head">
+        <div>
+          <h2>Quản lý danh mục</h2>
+          <p class="muted">Bạn cần tạo Category trước để thêm Product.</p>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <a class="btn secondary" href="{% url 'admin_categories' %}">Xem danh sách</a>
+          <a class="btn primary" href="{% url 'admin_category_create' %}">+ Thêm danh mục</a>
+        </div>
+      </div>
+
+      <!-- Danh mục gần đây (nếu view truyền recent_categories) -->
+      {% if recent_categories %}
+        <div class="muted" style="margin-top:12px;">
+          Gần đây ({{ recent_categories|length }} danh mục):
+        </div>
+
+        <div style="margin-top:10px; display:grid; gap:12px;">
+          {% for c in recent_categories %}
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+              <div>
+                <div style="font-weight:900;">{{ c.category_name }}</div>
+                <div class="muted" style="font-size:13px;">ID: {{ c.category_id }}</div>
+              </div>
+
+              <div style="display:flex; gap:10px;">
+                <!-- Sửa -->
+                <a class="btn secondary" href="{% url 'admin_category_edit' c.category_id %}">Sửa</a>
+
+                <!-- Xóa: POST + CSRF -->
+                <form method="post" action="{% url 'admin_category_delete' c.category_id %}" style="margin:0;">
+                  {% csrf_token %}
+                  <button class="btn" type="submit" onclick="return confirm('Xóa danh mục này?')">Xóa</button>
+                </form>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+
+        <div class="muted" style="margin-top:10px; font-size:13px;">
+          (Hiển thị danh mục gần đây. Bấm “Xem danh sách” để xem đầy đủ.)
+        </div>
+      {% endif %}
     </div>
-  {% else %}
-    <div class="muted" style="margin-top:12px;">Chưa có danh mục nào.</div>
-  {% endif %}
-</div>
+
+    <!-- =========================
+         TAB: ORDERS
+         ========================= -->
+    <div id="orders" class="tab-content">
+      <div class="section-head">
+        <div>
+          <h2>Quản lý đơn hàng</h2>
+          <p class="muted">Trang riêng có danh sách + chi tiết + cập nhật trạng thái.</p>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <a class="btn secondary" href="{% url 'admin_orders' %}">Xem danh sách</a>
+        </div>
+      </div>
+
+      <!-- Đơn gần đây (nếu view truyền recent_orders) -->
+      {% if recent_orders %}
+        <div class="muted" style="margin-top:12px;">
+          Gần đây ({{ recent_orders|length }} đơn):
+        </div>
+
+        <div style="margin-top:10px; display:grid; gap:12px;">
+          {% for o in recent_orders %}
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+              <div>
+                <div style="font-weight:900;">Đơn #{{ o.order_id }}</div>
+
+                <!-- vnd: filter custom để format tiền -->
+                <div class="muted" style="font-size:13px;">
+                  {{ o.account.username }} • {{ o.status }} • {{ o.total_amount|vnd }}
+                </div>
+              </div>
+
+              <a class="btn secondary" href="{% url 'admin_order_detail' o.order_id %}">Chi tiết</a>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
 
   <script>
+    // Chuyển tab: ẩn toàn bộ tab-content và bỏ active của toàn bộ tab-btn,
+    // sau đó bật active cho tab được chọn.
     function openTab(e, tabId) {
-      document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
-      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
+      document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
 
-      document.getElementById(tabId).classList.add("active");
+      const target = document.getElementById(tabId);
+      if (!target) return;
+
+      target.classList.add("active");
       e.currentTarget.classList.add("active");
     }
-
-    function openModal(id) {
-      document.getElementById(id).classList.add("active");
-    }
-
-    function closeModal(event) {
-      if (!event || event.target.classList.contains("modal-overlay")) {
-        document.querySelectorAll(".modal-overlay").forEach(m => m.classList.remove("active"));
-      }
-    }
   </script>
-
-  <!-- User modal -->
-  <div id="userModal" class="modal-overlay" onclick="closeModal(event)">
-    <div class="modal">
-      <span class="close-btn" onclick="closeModal()">×</span>
-      <h3>Thêm người dùng</h3>
-      <p class="muted">Phần này làm sau (vì chưa có view xử lý).</p>
-    </div>
-  </div>
-
-  <!-- ✅ Product modal (Hướng 2: nhiều field + gallery) -->
-  <div id="productModal" class="modal-overlay" onclick="closeModal(event)">
-    <div class="modal">
-      <span class="close-btn" onclick="closeModal()">×</span>
-      <h3>Thêm sản phẩm</h3>
-
-      {% if error_message %}
-        <div class="alert">{{ error_message }}</div>
-      {% endif %}
-
-      <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-
-        <div class="form-grid">
-          <div class="field">
-            <label>Tên sản phẩm</label>
-            <input type="text" name="product_name" required placeholder="VD: Sữa bột Aptamil 900g">
-          </div>
-
-          <div class="field">
-            <label>Giá</label>
-            <input type="number" step="0.01" name="price" required placeholder="VD: 325000">
-          </div>
-
-          <div class="field">
-            <label>Danh mục</label>
-            <select name="category_id" required>
-              <option value="">-- Chọn danh mục --</option>
-              {% for c in categories %}
-                <option value="{{ c.category_id }}">{{ c.category_name }}</option>
-              {% endfor %}
-            </select>
-          </div>
-
-          <div class="field">
-            <label>Ảnh sản phẩm</label>
-            <input type="file" name="image" accept="image/*" required>
-          </div>
-        </div>
-
-        <div class="field" style="margin-top:12px;">
-          <label>Mô tả</label>
-          <input type="text" name="description" placeholder="VD: Sữa nhập khẩu, phù hợp 1-3 tuổi...">
-        </div>
-
-        <!-- ✅ NEW: badges -->
-        <div class="form-grid" style="margin-top:12px;">
-          <div class="field">
-            <label style="display:flex; gap:8px; align-items:center;">
-              <input type="checkbox" name="is_genuine" checked> Chính hãng
-            </label>
-          </div>
-          <div class="field">
-            <label style="display:flex; gap:8px; align-items:center;">
-              <input type="checkbox" name="is_fast_ship" checked> Giao nhanh
-            </label>
-          </div>
-        </div>
-
-        <!-- ✅ NEW: 3 ô gợi ý -->
-        <div class="form-grid" style="margin-top:12px;">
-          <div class="field">
-            <label>Gợi ý</label>
-            <input type="text" name="hint_text" placeholder="VD: Uống ngon hơn khi lạnh">
-          </div>
-          <div class="field">
-            <label>Bảo quản (ngắn)</label>
-            <input type="text" name="storage_short" placeholder="VD: Nơi khô ráo, thoáng mát">
-          </div>
-          <div class="field">
-            <label>Đổi trả</label>
-            <input type="text" name="return_policy" placeholder="VD: 7 ngày nếu lỗi">
-          </div>
-        </div>
-
-        <!-- ✅ NEW: hướng dẫn bảo quản (nhiều dòng) -->
-        <div class="field" style="margin-top:12px;">
-          <label>Hướng dẫn bảo quản (mỗi dòng 1 ý)</label>
-          <textarea name="storage_guide" rows="4" placeholder="VD:
-Bảo quản nơi khô ráo và thoáng mát.
-Đóng kín sau khi mở.
-Ngon hơn khi uống lạnh."></textarea>
-        </div>
-
-        <!-- ✅ NEW: dinh dưỡng -->
-        <div class="form-grid" style="margin-top:12px;">
-          <div class="field">
-            <label>Năng lượng (kcal)</label>
-            <input type="number" name="energy_kcal" value="60">
-          </div>
-          <div class="field">
-            <label>Chất đạm (g)</label>
-            <input type="number" step="0.1" name="protein_g" value="3.0">
-          </div>
-          <div class="field">
-            <label>Chất béo (g)</label>
-            <input type="number" step="0.1" name="fat_g" value="3.0">
-          </div>
-          <div class="field">
-            <label>Carb (g)</label>
-            <input type="number" step="0.1" name="carb_g" value="4.0">
-          </div>
-        </div>
-
-        <!-- ✅ NEW: ảnh phụ (gallery) -->
-        <div class="field" style="margin-top:12px;">
-          <label>Ảnh phụ (gallery) - chọn nhiều ảnh</label>
-          <input type="file" name="gallery_images" accept="image/*" multiple>
-        </div>
-
-        <div class="form-actions" style="margin-top:14px;">
-          <button class="btn primary" type="submit">Lưu</button>
-          <button class="btn" type="button" onclick="closeModal()">Hủy</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Category modal -->
-  <div id="categoryModal" class="modal-overlay" onclick="closeModal(event)">
-    <div class="modal">
-      <span class="close-btn" onclick="closeModal()">×</span>
-      <h3>Thêm danh mục</h3>
-      <p class="muted">Bạn muốn mình viết luôn view + form tạo Category không?</p>
-    </div>
-  </div>
-
 </body>
 </html>

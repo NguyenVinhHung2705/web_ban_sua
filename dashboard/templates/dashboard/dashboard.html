@@ -1,172 +1,255 @@
 {% load static %}
 {% load formatters %}
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Trang chủ</title>
-
+  <title>MilkStore</title>
   <link rel="stylesheet" href="{% static 'css/home.css' %}">
 </head>
 
 <body>
-  <!-- Header -->
+
+  <!-- =========================
+       HEADER
+       ========================= -->
   <header class="header">
     <div class="header-inner">
+
+      <!-- Logo -->
       <a class="logo" href="{% url 'dashboard' %}">
         <span class="logo-badge">M</span>
         <span>MilkStore</span>
       </a>
 
+      <!-- ===== SEARCH FORM (GET) ===== -->
       <form class="search" action="{% url 'dashboard' %}" method="get">
-        <input type="text" name="q" value="{{ q|default:'' }}" placeholder="Tìm sữa, bỉm, vitamin..." />
+        <label for="q" class="sr-only">Tìm kiếm</label>
+        <input
+          id="q"
+          type="text"
+          name="q"
+          value="{{ q|default:'' }}"
+          placeholder="Tìm sữa, bỉm, vitamin..."
+        />
+
+        {# Nếu đang lọc theo category thì giữ cat khi search #}
+        {% if active_cat %}
+          <input type="hidden" name="cat" value="{{ active_cat }}">
+        {% endif %}
+
         <button class="chip" type="submit">Tìm</button>
       </form>
 
+      <!-- ===== ACTIONS RIGHT ===== -->
       <div class="actions">
+
+        <!-- Admin shortcut -->
         {% if account and account.role == "ADMIN" %}
           <a class="btn secondary" href="{% url 'to_admin_page' %}">Admin</a>
         {% endif %}
 
+        <!-- Cart -->
         <a class="cart" href="{% url 'to_view_cart' %}">
           🛒 Giỏ hàng
           <span class="badge">{{ total_cart_item|default:0 }}</span>
         </a>
 
+        <!-- Auth / User menu -->
         {% if not request.session.account_id %}
           <a class="btn secondary" href="{% url 'to_login_page' %}">Đăng nhập</a>
           <a class="btn primary" href="{% url 'to_register_page' %}">Đăng kí</a>
         {% else %}
+          <!-- Ví hiển thị nhanh -->
           <span class="chip">Ví: <b>{{ balance|vnd }}</b></span>
+
+          <!-- User dropdown (UI) -->
+          <div class="user-menu">
+            <button class="user-btn" type="button" aria-label="Tài khoản">👤</button>
+
+            <div class="user-dropdown">
+              <div class="ud-title">{{ account.username }}</div>
+              <div class="ud-item"><span>Vai trò</span><b>{{ account.role }}</b></div>
+              <div class="ud-item"><span>Số dư</span><b>{{ balance|vnd }}</b></div>
+            </div>
+          </div>
+
+          <!-- Các nút nhanh (bạn đang hiển thị cả dropdown + nút nhanh, giữ nguyên) -->
           <a class="btn secondary" href="{% url 'wallet_topup' %}">Nạp ví</a>
           <a class="btn secondary" href="{% url 'my_orders' %}">Đơn hàng</a>
           <a class="btn secondary" href="{% url 'logout' %}">Đăng xuất</a>
         {% endif %}
       </div>
     </div>
+
+    <!-- =========================
+         CATEGORY BAR
+         ========================= -->
+    <nav class="catbar">
+      <div class="catbar-inner">
+
+        {# Link "Tất cả": nếu đang có q thì giữ q #}
+        <a
+          class="catlink {% if not active_cat %}active{% endif %}"
+          href="{% url 'dashboard' %}{% if q %}?q={{ q|urlencode }}{% endif %}#products"
+        >
+          Tất cả
+        </a>
+
+        {% for c in nav_categories %}
+          {# active_cat có thể là string từ query => so sánh bằng stringformat:"s" để chắc #}
+          <a
+            class="catlink {% if active_cat|stringformat:'s' == c.category_id|stringformat:'s' %}active{% endif %}"
+            href="{% url 'dashboard' %}?cat={{ c.category_id }}{% if q %}&q={{ q|urlencode }}{% endif %}#products"
+          >
+            {{ c.category_name }}
+          </a>
+        {% endfor %}
+
+      </div>
+    </nav>
   </header>
 
+  <!-- =========================
+       BANNER
+       Chỉ hiện khi: không chọn category + không search
+       ========================= -->
+  {% if not active_cat and not q %}
+    <section class="hero-band">
+      <div class="hero-banner full">
+        <img src="{% static 'img/banner_th_1920.webp' %}" alt="MilkStore banner">
+      </div>
+    </section>
+  {% endif %}
+
+  <!-- =========================
+       MAIN
+       ========================= -->
   <main class="wrap">
-    <!-- Hero -->
-    <section class="hero">
-      <div>
-        <h1>Web bán sữa chính hãng<br/>giá tốt mỗi ngày</h1>
-        <p>
-          Chọn sữa phù hợp cho bé và gia đình. Ưu đãi theo combo, giao nhanh, hỗ trợ đổi trả.
-        </p>
 
-        <div class="hero-cta">
-          <a class="btn primary" href="#products">Xem sản phẩm</a>
-          <a class="btn secondary" href="{% url 'to_view_cart' %}">Xem giỏ hàng</a>
-
-          {% if not request.session.account_id %}
-            <a class="btn secondary" href="{% url 'to_login_page' %}">Đăng nhập để mua</a>
-          {% else %}
-            <a class="btn secondary" href="{% url 'wallet_topup' %}">Nạp ví</a>
-          {% endif %}
-        </div>
-      </div>
-
-      <div class="hero-art" aria-label="banner"></div>
-    </section>
-
-    <!-- Trust / info -->
-    <section class="grid">
-      <div class="card">
-        <p class="card-title">✅ Hàng chính hãng</p>
-        <p class="card-sub">Cam kết nguồn gốc rõ ràng, hạn dùng minh bạch.</p>
-      </div>
-      <div class="card">
-        <p class="card-title">🚚 Giao nhanh</p>
-        <p class="card-sub">Giao nội thành nhanh, theo dõi đơn dễ dàng.</p>
-      </div>
-      <div class="card">
-        <p class="card-title">💳 Thanh toán an toàn</p>
-        <p class="card-sub">Hỗ trợ nhiều phương thức, bảo mật thông tin.</p>
-      </div>
-    </section>
-
-    <!-- Featured products -->
+    <!-- ===== PRODUCTS SECTION ===== -->
     <section class="section" id="products">
       <div class="section-head">
+
         {% if q %}
           <h2>Kết quả tìm kiếm: “{{ q }}”</h2>
           <span class="muted">Tìm thấy {{ search_count }} sản phẩm</span>
+
+        {% elif active_cat %}
+          <h2>
+            Danh mục:
+            {# Nếu categories có list đầy đủ, tìm tên danh mục theo active_cat #}
+            {% for c in categories %}
+              {% if c.category_id|stringformat:'s' == active_cat|stringformat:'s' %}
+                {{ c.category_name }}
+              {% endif %}
+            {% endfor %}
+          </h2>
+          <span class="muted">Giá tốt – chính hãng</span>
+
         {% else %}
           <h2>Sản phẩm nổi bật</h2>
           <span class="muted">Giá tốt – chính hãng</span>
         {% endif %}
+
       </div>
 
-      <div class="product-grid">
-        {% for p in products %}
-          <div class="product-card">
+      <!-- Grid: trang chủ 4 cột | khi lọc/search thì 3 cột -->
+      <div class="product-grid {% if active_cat or q %}grid-3{% endif %}">
 
-            <!-- ✅ Click ảnh -> detail -->
+        {% for p in products %}
+          <article class="product-card pro">
+
+            <!-- Ảnh + link chi tiết -->
             <a class="product-img" href="{% url 'product_detail' p.product_id %}">
               {% if p.image %}
                 <img src="{{ p.image.url }}" alt="{{ p.product_name }}">
               {% else %}
-                <div class="muted">Chưa có ảnh</div>
+                <img src="{% static 'img/placeholder.png' %}" alt="{{ p.product_name }}">
               {% endif %}
             </a>
 
-            <!-- ✅ Click tên -> detail -->
-            <a class="product-name" href="{% url 'product_detail' p.product_id %}">
-              {{ p.product_name }}
-            </a>
-
-            <div class="product-meta">
-              <div class="product-price">{{ p.price|vnd }}</div>
-              <div class="product-cat">{{ p.category.category_name }}</div>
+            <!-- Danh mục: tránh lỗi nếu p.category null -->
+            <div class="p-badge">
+              {% if p.category %}
+                {{ p.category.category_name }}
+              {% else %}
+                Chưa phân loại
+              {% endif %}
             </div>
 
-            <div class="product-desc">{{ p.description }}</div>
-            <div class="muted" style="font-size:12px;">Giao nhanh • Đổi trả 7 ngày</div>
+            <!-- Tên -->
+            <div class="product-name">
+              <a href="{% url 'product_detail' p.product_id %}">{{ p.product_name }}</a>
+            </div>
 
-            {% if request.session.account_id %}
-              <a class="btn primary product-btn" href="{% url 'add_to_cart' p.product_id %}">
-                Thêm vào giỏ
-              </a>
-            {% else %}
-              <a class="btn secondary product-btn" href="{% url 'to_login_page' %}">
-                Đăng nhập để mua
-              </a>
+            <!-- Giá -->
+            <div class="p-price">{{ p.price|vnd }}</div>
+
+            <!-- Mô tả ngắn (nếu có) -->
+            {% if p.description %}
+              <div class="product-desc">{{ p.description }}</div>
             {% endif %}
-          </div>
+
+            <!-- Add to cart: POST + CSRF -->
+            <form method="post" action="{% url 'add_to_cart' p.product_id %}">
+              {% csrf_token %}
+              <button class="btn primary product-btn" type="submit">Thêm vào giỏ</button>
+            </form>
+
+          </article>
+
         {% empty %}
-          <p class="muted">Chưa có sản phẩm nào. Vào Admin để thêm sản phẩm.</p>
+          <div class="muted">Không có sản phẩm phù hợp.</div>
         {% endfor %}
+
+      </div>
+
+      <!-- ===== PAGINATION (ngoài vòng for) ===== -->
+      {% if page_obj and page_obj.paginator.num_pages > 1 %}
+        <div class="pager">
+
+          {% if page_obj.has_previous %}
+            <a class="btn secondary"
+               href="?page={{ page_obj.previous_page_number }}{% if active_cat %}&cat={{ active_cat }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}#products">
+              ← Trước
+            </a>
+          {% endif %}
+
+          <span class="chip">
+            Trang {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+          </span>
+
+          {% if page_obj.has_next %}
+            <a class="btn secondary"
+               href="?page={{ page_obj.next_page_number }}{% if active_cat %}&cat={{ active_cat }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}#products">
+              Sau →
+            </a>
+          {% endif %}
+
+        </div>
+      {% endif %}
+    </section>
+
+    <!-- ===== TRUST SECTION ===== -->
+    <section class="grid trust-bottom">
+      <div class="card">
+        <h3 class="card-title">✅ Hàng chính hãng</h3>
+        <p class="card-sub">Cam kết nguồn gốc rõ ràng, hạn dùng minh bạch.</p>
+      </div>
+      <div class="card">
+        <h3 class="card-title">🚚 Giao nhanh</h3>
+        <p class="card-sub">Giao nội thành nhanh, theo dõi đơn dễ dàng.</p>
+      </div>
+      <div class="card">
+        <h3 class="card-title">💳 Thanh toán an toàn</h3>
+        <p class="card-sub">Hỗ trợ nhiều phương thức, bảo mật thông tin.</p>
       </div>
     </section>
 
-    <!-- Logged-in account summary -->
-    {% if request.session.account_id %}
-      <section class="account">
-        <div>
-          <div style="color:var(--muted); font-size:13px;">Xin chào</div>
-          <div style="font-size:18px; font-weight:900;">{{ account.username }}</div>
-        </div>
-
-        <div class="kpis">
-          <div class="kpi">
-            <small>Số dư ví</small>
-            <b>{{ balance|vnd }}</b>
-          </div>
-          <div class="kpi">
-            <small>Trong giỏ hàng</small>
-            <b>{{ total_cart_item }} sản phẩm</b>
-          </div>
-        </div>
-
-        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
-          <a class="btn secondary" href="{% url 'wallet_topup' %}">Nạp ví</a>
-          <a class="btn secondary" href="{% url 'my_orders' %}">Xem đơn hàng</a>
-          <a class="btn primary" href="{% url 'to_view_cart' %}">Đi tới giỏ hàng</a>
-        </div>
-      </section>
-    {% endif %}
   </main>
+
 </body>
 </html>

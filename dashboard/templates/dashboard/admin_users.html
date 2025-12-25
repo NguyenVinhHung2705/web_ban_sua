@@ -1,0 +1,152 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Người dùng</title>
+  <link rel="stylesheet" href="{% static 'css/admin_page.css' %}">
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ===== TOP BAR ===== -->
+  <div class="topbar">
+    <div class="brand">
+      <a href="{% url 'to_admin_page' %}">← Admin</a>
+    </div>
+
+    <div class="muted">
+      {% if account %}
+        Xin chào <b>{{ account.username }}</b>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="page-card">
+
+    <!-- ===== HEADER ===== -->
+    <div class="section-head">
+      <div>
+        <h1>Quản lý người dùng</h1>
+        <!-- Tổng số user dựa vào paginator -->
+        <div class="muted">Tổng: {{ page_obj.paginator.count }} người dùng</div>
+      </div>
+
+      <a class="btn primary" href="{% url 'admin_user_create' %}">+ Thêm người dùng</a>
+    </div>
+
+    <!-- ===== SEARCH (GET) ===== -->
+    <form method="get" style="display:flex; gap:10px; align-items:center; margin-top:12px;">
+      <label for="q" class="muted" style="font-weight:600;">Tìm</label>
+
+      <input
+        id="q"
+        type="text"
+        name="q"
+        value="{{ q|default:'' }}"
+        placeholder="Tìm username / email / họ tên..."
+        style="max-width:380px;"
+      >
+
+      <button class="btn secondary" type="submit">Tìm</button>
+
+      <!-- Nếu đang lọc (q có giá trị) thì hiện nút xóa lọc -->
+      {% if q %}
+        <a class="btn" href="{% url 'admin_users' %}">Xóa lọc</a>
+      {% endif %}
+    </form>
+
+    <!-- ===== LIST ===== -->
+    <div style="margin-top:14px; display:grid; gap:12px;">
+      {% for u in page_obj %}
+        <div class="card" style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+          <!-- Left: info -->
+          <div>
+            <div style="font-weight:900;">
+              {{ u.username }}
+
+              <!-- Role -->
+              <span class="chip" style="margin-left:8px;">
+                {{ u.role }}
+              </span>
+
+              <!-- Status -->
+              {% if u.status == "normal" %}
+                <span class="chip" style="margin-left:6px;">Hoạt động</span>
+              {% else %}
+                <span class="chip" style="margin-left:6px;">Bị khóa</span>
+              {% endif %}
+            </div>
+
+            <!-- Meta: id + profile + wallet -->
+            <div class="muted" style="font-size:13px;">
+              ID: {{ u.id }}
+
+              <!-- accountprofile: có thể không tồn tại -->
+              {% if u.accountprofile %}
+                • {{ u.accountprofile.full_name|default:"(chưa có tên)" }}
+                • {{ u.accountprofile.email|default:"(chưa có email)" }}
+              {% endif %}
+
+              <!-- wallet: có thể không tồn tại -->
+              {% if u.wallet %}
+                • Ví: {{ u.wallet.balance }}
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Right: actions -->
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <a class="btn secondary" href="{% url 'admin_user_edit' u.id %}">Sửa</a>
+
+            <!-- Toggle lock/unlock: POST + CSRF -->
+            <form method="post" action="{% url 'admin_user_toggle' u.id %}" style="margin:0;">
+              {% csrf_token %}
+              {% if u.status == "normal" %}
+                <button class="btn" type="submit" onclick="return confirm('Khóa user này?')">Khóa</button>
+              {% else %}
+                <button class="btn secondary" type="submit">Mở khóa</button>
+              {% endif %}
+            </form>
+
+            <!-- Delete: POST + CSRF -->
+            <form method="post" action="{% url 'admin_user_delete' u.id %}" style="margin:0;">
+              {% csrf_token %}
+              <button
+                class="btn"
+                type="submit"
+                onclick="return confirm('Xóa user này? Nếu user có đơn hàng thì hệ thống sẽ KHÓA thay vì xóa.');"
+              >
+                Xóa
+              </button>
+            </form>
+          </div>
+        </div>
+
+      {% empty %}
+        <div class="muted">Chưa có người dùng nào.</div>
+      {% endfor %}
+    </div>
+
+    <!-- ===== PAGINATION ===== -->
+    {% if page_obj.paginator.num_pages > 1 %}
+      <div style="display:flex; gap:8px; justify-content:center; margin-top:16px; flex-wrap:wrap;">
+        {% if page_obj.has_previous %}
+          <a class="btn" href="?q={{ q|urlencode }}&page={{ page_obj.previous_page_number }}">‹ Trước</a>
+        {% endif %}
+
+        <span class="chip">Trang {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+
+        {% if page_obj.has_next %}
+          <a class="btn" href="?q={{ q|urlencode }}&page={{ page_obj.next_page_number }}">Sau ›</a>
+        {% endif %}
+      </div>
+    {% endif %}
+
+  </div>
+</div>
+
+</body>
+</html>

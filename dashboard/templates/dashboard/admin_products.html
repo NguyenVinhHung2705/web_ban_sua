@@ -12,34 +12,47 @@
 <body>
 
 <div class="container">
+
+  <!-- ===== TOP BAR ===== -->
   <div class="topbar">
     <div class="brand">
       <a href="{% url 'to_admin_page' %}">← Admin</a>
     </div>
-    <div class="muted">{% if account %}Xin chào <b>{{ account.username }}</b>{% endif %}</div>
+
+    <div class="muted">
+      {% if account %}
+        Xin chào <b>{{ account.username }}</b>
+      {% endif %}
+    </div>
   </div>
 
   <div class="page-card">
+
+    <!-- ===== PAGE HEADER ===== -->
     <div class="page-head">
       <div>
         <h1>Quản lý sản phẩm</h1>
         <div class="muted">Danh sách sản phẩm • Sửa/xóa nhanh • Tìm kiếm/ lọc</div>
       </div>
+
       <a class="btn primary" href="{% url 'admin_product_create' %}">+ Thêm sản phẩm</a>
     </div>
 
-    <!-- Toolbar -->
+    <!-- ===== TOOLBAR: SEARCH / FILTER / SORT ===== -->
     <form class="toolbar" method="get">
+      <!-- Tìm kiếm theo tên -->
       <div class="tool">
-        <label>Tìm</label>
-        <input type="text" name="q" value="{{ q }}" placeholder="Tên sản phẩm...">
+        <label for="q">Tìm</label>
+        <input id="q" type="text" name="q" value="{{ q|default_if_none:'' }}" placeholder="Tên sản phẩm...">
       </div>
 
+      <!-- Lọc theo danh mục -->
       <div class="tool">
-        <label>Danh mục</label>
-        <select name="cat">
+        <label for="cat">Danh mục</label>
+        <select id="cat" name="cat">
           <option value="">-- Tất cả --</option>
           {% for c in categories %}
+            {# cat từ querystring là string => so sánh bằng stringformat:"s" #}
             <option value="{{ c.category_id }}" {% if cat == c.category_id|stringformat:"s" %}selected{% endif %}>
               {{ c.category_name }}
             </option>
@@ -47,28 +60,32 @@
         </select>
       </div>
 
+      <!-- Sắp xếp -->
       <div class="tool">
-        <label>Sắp xếp</label>
-        <select name="sort">
+        <label for="sort">Sắp xếp</label>
+        <select id="sort" name="sort">
           <option value="new" {% if sort == "new" %}selected{% endif %}>Mới nhất</option>
           <option value="price_asc" {% if sort == "price_asc" %}selected{% endif %}>Giá tăng</option>
           <option value="price_desc" {% if sort == "price_desc" %}selected{% endif %}>Giá giảm</option>
         </select>
       </div>
 
+      <!-- Nút lọc / reset -->
       <div class="tool tool-actions">
         <button class="btn secondary" type="submit">Lọc</button>
         <a class="btn ghost" href="{% url 'admin_products' %}">Reset</a>
       </div>
     </form>
 
-    <!-- Table -->
+    <!-- ===== TABLE WRAP ===== -->
     <div class="table-wrap">
       <div class="table-head">
         <div class="table-title">
           <span class="dot"></span>
           <b>Danh sách</b>
         </div>
+
+        <!-- Tổng số bản ghi dựa theo paginator -->
         <span class="pill">Tổng: {{ page_obj.paginator.count }}</span>
       </div>
 
@@ -88,6 +105,7 @@
           <tbody>
             {% for p in page_obj %}
               <tr>
+                <!-- Ảnh -->
                 <td>
                   <div class="thumb">
                     {% if p.image %}
@@ -98,34 +116,53 @@
                   </div>
                 </td>
 
+                <!-- Tên + ID -->
                 <td>
                   <div style="font-weight:900;">{{ p.product_name }}</div>
-                  <div class="muted" style="font-size:12px;">
-                    #{{ p.product_id }}
-                  </div>
+                  <div class="muted" style="font-size:12px;">#{{ p.product_id }}</div>
                 </td>
 
+                <!-- Danh mục: tránh lỗi nếu p.category null -->
                 <td class="muted">
-                  {{ p.category.category_name|default:"(Chưa có)" }}
+                  {% if p.category %}
+                    {{ p.category.category_name }}
+                  {% else %}
+                    (Chưa có)
+                  {% endif %}
                 </td>
 
+                <!-- Giá: format vnd (filter custom) -->
                 <td class="right">
                   <b>{{ p.price|vnd }}</b>
                 </td>
 
+                <!-- Badge -->
                 <td class="center">
                   <div class="badge-row">
-                    {% if p.is_genuine %}<span class="tag ok">✅ Chính hãng</span>{% endif %}
-                    {% if p.is_fast_ship %}<span class="tag ship">🚚 Giao nhanh</span>{% endif %}
-                    {% if not p.is_genuine and not p.is_fast_ship %}<span class="tag">—</span>{% endif %}
+                    {% if p.is_genuine %}
+                      <span class="tag ok">✅ Chính hãng</span>
+                    {% endif %}
+
+                    {% if p.is_fast_ship %}
+                      <span class="tag ship">🚚 Giao nhanh</span>
+                    {% endif %}
+
+                    {% if not p.is_genuine and not p.is_fast_ship %}
+                      <span class="tag">—</span>
+                    {% endif %}
                   </div>
                 </td>
 
+                <!-- Thao tác: Sửa + Xóa (POST + CSRF) -->
                 <td class="right">
                   <a class="btn secondary" href="{% url 'admin_product_edit' p.product_id %}">Sửa</a>
 
-                  <form method="post" action="{% url 'admin_product_delete' p.product_id %}" style="display:inline;"
-                        onsubmit="return confirm('Xóa sản phẩm này?');">
+                  <form
+                    method="post"
+                    action="{% url 'admin_product_delete' p.product_id %}"
+                    style="display:inline;"
+                    onsubmit="return confirm('Xóa sản phẩm này?');"
+                  >
                     {% csrf_token %}
                     <button class="btn danger" type="submit">Xóa</button>
                   </form>
@@ -135,27 +172,38 @@
           </tbody>
         </table>
 
-        <!-- Pagination -->
+        <!-- ===== PAGINATION ===== -->
         <div class="pager">
           {% if page_obj.has_previous %}
-            <a class="btn ghost" href="?q={{ q }}&cat={{ cat }}&sort={{ sort }}&page={{ page_obj.previous_page_number }}">← Trước</a>
+            <a class="btn ghost"
+               href="?q={{ q|urlencode }}&cat={{ cat|urlencode }}&sort={{ sort|urlencode }}&page={{ page_obj.previous_page_number }}">
+              ← Trước
+            </a>
           {% else %}
             <span></span>
           {% endif %}
 
-          <div class="muted">Trang {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</div>
+          <div class="muted">
+            Trang {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+          </div>
 
           {% if page_obj.has_next %}
-            <a class="btn ghost" href="?q={{ q }}&cat={{ cat }}&sort={{ sort }}&page={{ page_obj.next_page_number }}">Sau →</a>
+            <a class="btn ghost"
+               href="?q={{ q|urlencode }}&cat={{ cat|urlencode }}&sort={{ sort|urlencode }}&page={{ page_obj.next_page_number }}">
+              Sau →
+            </a>
           {% else %}
             <span></span>
           {% endif %}
         </div>
 
       {% else %}
-        <div class="card"><div class="muted">Chưa có sản phẩm nào.</div></div>
+        <div class="card">
+          <div class="muted">Chưa có sản phẩm nào.</div>
+        </div>
       {% endif %}
     </div>
+
   </div>
 </div>
 

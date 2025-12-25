@@ -10,96 +10,142 @@
 <body>
 
 <div class="container">
+
+  <!-- ===== TOP BAR ===== -->
   <div class="topbar">
-    <div class="brand"><a href="{% url 'admin_products' %}">← Sản phẩm</a></div>
-    <div class="muted">Xin chào <b>{{ account.username }}</b></div>
+    <div class="brand">
+      <a href="{% url 'admin_products' %}">← Sản phẩm</a>
+    </div>
+    <div class="muted">
+      Xin chào <b>{{ account.username }}</b>
+    </div>
   </div>
 
   <div class="page-card">
     <h1>Sửa sản phẩm #{{ p.product_id }}</h1>
 
+    <!-- Thông báo lỗi nếu view truyền error_message -->
     {% if error_message %}
       <div class="alert">{{ error_message }}</div>
     {% endif %}
 
-    <form method="post" enctype="multipart/form-data" class="form-card">
+    <!-- enctype multipart để upload ảnh -->
+    <form method="post" enctype="multipart/form-data" class="form-card" autocomplete="off">
       {% csrf_token %}
 
+      <!-- ===== GRID 1: name / price / category / main image ===== -->
       <div class="form-grid">
+
         <div class="field">
-          <label>Tên sản phẩm</label>
-          <input type="text" name="product_name" value="{{ p.product_name }}" required>
+          <label for="product_name">Tên sản phẩm</label>
+          <input
+            id="product_name"
+            type="text"
+            name="product_name"
+            value="{{ p.product_name }}"
+            required
+          >
         </div>
 
         <div class="field">
-          <label>Giá</label>
-          <input type="number" step="0.01" name="price" value="{{ p.price }}" required>
+          <label for="price">Giá</label>
+          <input
+            id="price"
+            type="number"
+            step="0.01"
+            name="price"
+            value="{{ p.price }}"
+            inputmode="decimal"
+            required
+          >
         </div>
 
         <div class="field">
-          <label>Danh mục</label>
-          <select name="category_id" required>
+          <label for="category_id">Danh mục</label>
+          <select id="category_id" name="category_id" required>
             <option value="">-- Chọn danh mục --</option>
             {% for c in categories %}
-              <option value="{{ c.category_id }}" {% if p.category and p.category.category_id == c.category_id %}selected{% endif %}>
+              <option
+                value="{{ c.category_id }}"
+                {% if p.category and p.category.category_id == c.category_id %}selected{% endif %}
+              >
                 {{ c.category_name }}
               </option>
             {% endfor %}
           </select>
         </div>
 
-        <!-- ✅ MAIN IMAGE: current + preview new -->
+        <!-- ===== MAIN IMAGE: ảnh hiện có + preview ảnh mới ===== -->
         <div class="field">
           <label>Ảnh chính</label>
 
           <div class="img-preview-wrap">
             {% if p.image %}
+              <!-- Có ảnh cũ => hiển thị luôn -->
               <img id="mainImgPreview" class="img-preview" src="{{ p.image.url }}" alt="main">
+              <div id="mainImgHint" class="muted" style="font-size:12px; display:none;">Chưa có ảnh</div>
             {% else %}
+              <!-- Chưa có ảnh => ẩn img + hiện hint -->
               <img id="mainImgPreview" class="img-preview" style="display:none;" alt="main">
-              <div class="muted" style="font-size:12px;">Chưa có ảnh</div>
+              <div id="mainImgHint" class="muted" style="font-size:12px;">Chưa có ảnh</div>
             {% endif %}
           </div>
 
-          <label style="margin-top:10px;">Đổi ảnh chính (nếu muốn)</label>
+          <label for="mainImgInput" style="margin-top:10px;">Đổi ảnh chính (nếu muốn)</label>
           <input id="mainImgInput" type="file" name="image" accept="image/*">
           <div class="muted" style="font-size:12px;">Chọn ảnh mới sẽ preview ngay bên trên</div>
         </div>
+
       </div>
 
+      <!-- ===== DESCRIPTION ===== -->
       <div class="field">
-        <label>Mô tả</label>
-        <textarea name="description" rows="3">{{ p.description }}</textarea>
+        <label for="description">Mô tả</label>
+        <textarea id="description" name="description" rows="3">{{ p.description }}</textarea>
       </div>
 
       <div class="hr"></div>
 
+      <!-- ===== GRID 2: badges + upload gallery mới ===== -->
       <div class="form-grid">
+
         <div class="field">
           <label>Badge</label>
           <div class="check-row">
-            <label><input type="checkbox" name="is_genuine" {% if p.is_genuine %}checked{% endif %}> Chính hãng</label>
-            <label><input type="checkbox" name="is_fast_ship" {% if p.is_fast_ship %}checked{% endif %}> Giao nhanh</label>
+            <label>
+              <input type="checkbox" name="is_genuine" {% if p.is_genuine %}checked{% endif %}>
+              Chính hãng
+            </label>
+            <label>
+              <input type="checkbox" name="is_fast_ship" {% if p.is_fast_ship %}checked{% endif %}>
+              Giao nhanh
+            </label>
           </div>
         </div>
 
-        <!-- ✅ GALLERY: input + preview new files -->
+        <!-- Upload ảnh phụ mới: chỉ preview trước, chưa lưu DB cho đến khi bấm Lưu -->
         <div class="field">
-          <label>Thêm ảnh phụ (gallery)</label>
+          <label for="galleryInput">Thêm ảnh phụ (gallery)</label>
           <input id="galleryInput" type="file" name="gallery_images" accept="image/*" multiple>
 
           <div id="galleryPreview" class="gallery-preview" style="display:none;"></div>
 
-          <div class="muted" style="font-size:12px;">Ảnh mới chọn sẽ preview ở đây (chưa lưu DB cho đến khi bấm Lưu)</div>
+          <div class="muted" style="font-size:12px;">
+            Ảnh mới chọn sẽ preview ở đây (chưa lưu DB cho đến khi bấm Lưu)
+          </div>
         </div>
+
       </div>
 
+      <!-- ===== GALLERY HIỆN CÓ: tick để xóa ===== -->
       {% if gallery %}
         <div class="field">
           <label>Ảnh phụ hiện có (tick để xóa)</label>
+
           <div class="gallery-grid">
             {% for g in gallery %}
               <label class="gitem">
+                <!-- delete_gallery: backend nhận list id để xóa -->
                 <input type="checkbox" name="delete_gallery" value="{{ g.id }}">
                 <img src="{{ g.image.url }}" alt="gallery">
                 <span>Xóa</span>
@@ -109,89 +155,125 @@
         </div>
       {% endif %}
 
+      <!-- ===== GRID 3: hint / storage short / return policy ===== -->
       <div class="form-grid">
+
         <div class="field">
-          <label>Gợi ý</label>
-          <input type="text" name="hint_text" value="{{ p.hint_text }}">
+          <label for="hint_text">Gợi ý</label>
+          <input id="hint_text" type="text" name="hint_text" value="{{ p.hint_text }}">
         </div>
+
         <div class="field">
-          <label>Bảo quản (ngắn)</label>
-          <input type="text" name="storage_short" value="{{ p.storage_short }}">
+          <label for="storage_short">Bảo quản (ngắn)</label>
+          <input id="storage_short" type="text" name="storage_short" value="{{ p.storage_short }}">
         </div>
+
         <div class="field">
-          <label>Đổi trả</label>
-          <input type="text" name="return_policy" value="{{ p.return_policy }}">
+          <label for="return_policy">Đổi trả</label>
+          <input id="return_policy" type="text" name="return_policy" value="{{ p.return_policy }}">
         </div>
+
       </div>
 
+      <!-- ===== STORAGE GUIDE ===== -->
       <div class="field">
-        <label>Hướng dẫn bảo quản</label>
-        <textarea name="storage_guide" rows="4">{{ p.storage_guide }}</textarea>
+        <label for="storage_guide">Hướng dẫn bảo quản</label>
+        <textarea id="storage_guide" name="storage_guide" rows="4">{{ p.storage_guide }}</textarea>
       </div>
 
+      <!-- ===== NUTRITION ===== -->
       <div class="form-grid">
         <div class="field">
-          <label>Năng lượng (kcal)</label>
-          <input type="number" name="energy_kcal" value="{{ p.energy_kcal }}">
+          <label for="energy_kcal">Năng lượng (kcal)</label>
+          <input id="energy_kcal" type="number" name="energy_kcal" value="{{ p.energy_kcal }}">
         </div>
+
         <div class="field">
-          <label>Protein (g)</label>
-          <input type="number" step="0.1" name="protein_g" value="{{ p.protein_g }}">
+          <label for="protein_g">Protein (g)</label>
+          <input id="protein_g" type="number" step="0.1" name="protein_g" value="{{ p.protein_g }}" inputmode="decimal">
         </div>
+
         <div class="field">
-          <label>Fat (g)</label>
-          <input type="number" step="0.1" name="fat_g" value="{{ p.fat_g }}">
+          <label for="fat_g">Fat (g)</label>
+          <input id="fat_g" type="number" step="0.1" name="fat_g" value="{{ p.fat_g }}" inputmode="decimal">
         </div>
+
         <div class="field">
-          <label>Carb (g)</label>
-          <input type="number" step="0.1" name="carb_g" value="{{ p.carb_g }}">
+          <label for="carb_g">Carb (g)</label>
+          <input id="carb_g" type="number" step="0.1" name="carb_g" value="{{ p.carb_g }}" inputmode="decimal">
         </div>
       </div>
 
+      <!-- ===== ACTIONS ===== -->
       <div class="form-actions">
         <button class="btn primary" type="submit">Lưu</button>
         <a class="btn secondary" href="{% url 'admin_products' %}">Hủy</a>
       </div>
+
     </form>
   </div>
 </div>
 
-<!-- ✅ preview scripts -->
 <script>
-  // MAIN IMAGE preview
-  (function(){
+  // =========================
+  // MAIN IMAGE PREVIEW (1 ảnh)
+  // =========================
+  (function () {
     const input = document.getElementById("mainImgInput");
     const preview = document.getElementById("mainImgPreview");
+    const hint = document.getElementById("mainImgHint");
     if (!input || !preview) return;
 
-    input.addEventListener("change", (e) => {
-      const f = e.target.files && e.target.files[0];
-      if (!f) return;
-      preview.src = URL.createObjectURL(f);
+    let currentUrl = null;
+
+    input.addEventListener("change", () => {
+      const file = input.files && input.files[0];
+
+      // Nếu không chọn file
+      if (!file) return;
+
+      // Revoke url cũ để tránh leak
+      if (currentUrl) URL.revokeObjectURL(currentUrl);
+
+      currentUrl = URL.createObjectURL(file);
+      preview.src = currentUrl;
       preview.style.display = "block";
+      if (hint) hint.style.display = "none";
     });
   })();
 
-  // GALLERY preview (multiple)
-  (function(){
+  // =========================
+  // GALLERY PREVIEW (nhiều ảnh)
+  // =========================
+  (function () {
     const input = document.getElementById("galleryInput");
     const box = document.getElementById("galleryPreview");
     if (!input || !box) return;
 
+    let urls = [];
+
     input.addEventListener("change", () => {
+      // Clear preview cũ + revoke urls cũ
+      urls.forEach(u => URL.revokeObjectURL(u));
+      urls = [];
       box.innerHTML = "";
+
       const files = Array.from(input.files || []);
-      if (!files.length){
+      if (!files.length) {
         box.style.display = "none";
         return;
       }
-      files.forEach(f => {
-        const url = URL.createObjectURL(f);
+
+      files.forEach(file => {
+        const url = URL.createObjectURL(file);
+        urls.push(url);
+
         const img = document.createElement("img");
         img.src = url;
         img.alt = "new gallery";
         box.appendChild(img);
       });
+
       box.style.display = "grid";
     });
   })();

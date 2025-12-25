@@ -12,11 +12,15 @@
 </head>
 <body>
 
+<!-- =========================
+     HEADER
+     ========================= -->
 <header class="header">
   <div class="header-inner">
     <a class="logo" href="{% url 'dashboard' %}">
       <span class="logo-badge">M</span><span>MilkStore</span>
     </a>
+
     <div class="actions">
       <a class="cart" href="{% url 'to_view_cart' %}">
         🛒 Giỏ hàng <span class="badge">{{ total_cart_item|default:0 }}</span>
@@ -29,11 +33,24 @@
 <main class="wrap">
   <h2 style="margin:10px 0 12px;">Lịch sử đơn hàng</h2>
 
+  <!-- =========================
+       LIST ORDERS
+       orders được truyền từ view
+       ========================= -->
   {% if orders %}
     <div class="grid" style="grid-template-columns:1fr; gap:12px;">
+
       {% for o in orders %}
-        <a class="card" href="{% url 'order_detail' o.order_id %}" style="display:block;">
+        <!-- Mỗi đơn là 1 card link sang trang chi tiết -->
+        <a
+          class="card"
+          href="{% url 'order_detail' o.order_id %}"
+          style="display:block;"
+          aria-label="Xem chi tiết đơn {{ o.order_id }}"
+        >
           <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+
+            <!-- LEFT: mã đơn + thời gian -->
             <div>
               <div style="font-weight:900;">Đơn #{{ o.order_id }}</div>
               <div style="color:var(--muted); font-size:13px;">
@@ -41,17 +58,23 @@
               </div>
             </div>
 
+            <!-- RIGHT: tổng tiền + trạng thái -->
             <div style="text-align:right;">
               <div style="font-weight:900;">
                 {{ o.total_amount|vnd }}
               </div>
-              <div style="color:var(--muted); font-size:13px;">{{ o.status }}</div>
+              <div style="color:var(--muted); font-size:13px;">
+                {{ o.status }}
+              </div>
             </div>
+
           </div>
         </a>
       {% endfor %}
+
     </div>
   {% else %}
+    <!-- Không có đơn -->
     <p style="color:var(--muted);">Chưa có đơn hàng nào.</p>
   {% endif %}
 </main>

@@ -5,30 +5,51 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin - Thêm danh mục</title>
+
+  <!-- CSS giao diện admin -->
   <link rel="stylesheet" href="{% static 'css/admin_page.css' %}">
 </head>
 <body>
 
 <div class="container">
+  <!-- ===== TOP BAR ===== -->
   <div class="topbar">
-    <div class="brand"><a href="{% url 'admin_categories' %}">← Danh mục</a></div>
-    <div class="muted">Xin chào <b>{{ account.username }}</b></div>
+    <!-- Link quay lại danh sách danh mục -->
+    <div class="brand">
+      <a href="{% url 'admin_categories' %}">← Danh mục</a>
+    </div>
+
+    <!-- Hiển thị tài khoản đang đăng nhập -->
+    <div class="muted">
+      Xin chào <b>{{ account.username }}</b>
+    </div>
   </div>
 
   <div class="page-card">
     <h1>Thêm danh mục</h1>
 
+    <!-- Thông báo lỗi (nếu view truyền error_message) -->
     {% if error_message %}
       <div class="alert">{{ error_message }}</div>
     {% endif %}
 
-    <form method="post" class="form-card">
+    <!-- Form tạo danh mục (POST) -->
+    <form method="post" class="form-card" autocomplete="off">
       {% csrf_token %}
+
+      <!-- Field: tên danh mục -->
       <div class="field">
-        <label>Tên danh mục</label>
-        <input type="text" name="category_name" placeholder="VD: Sữa bột" required>
+        <label for="category_name">Tên danh mục</label>
+        <input
+          id="category_name"
+          type="text"
+          name="category_name"
+          placeholder="VD: Sữa bột"
+          required
+        >
       </div>
 
+      <!-- Nút hành động -->
       <div class="form-actions">
         <button class="btn primary" type="submit">Lưu</button>
         <a class="btn secondary" href="{% url 'admin_categories' %}">Hủy</a>

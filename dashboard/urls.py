@@ -40,4 +40,10 @@ urlpatterns = [
     path("admin-page/categories/<int:category_id>/edit/", views.admin_category_edit, name="admin_category_edit"),
     path("admin-page/categories/<int:category_id>/delete/", views.admin_category_delete, name="admin_category_delete"),
 
+    path("admin-page/users/", views.admin_users, name="admin_users"),
+    path("admin-page/users/create/", views.admin_user_create, name="admin_user_create"),
+    path("admin-page/users/<int:user_id>/edit/", views.admin_user_edit, name="admin_user_edit"),
+    path("admin-page/users/<int:user_id>/toggle/", views.admin_user_toggle, name="admin_user_toggle"),
+    path("admin-page/users/<int:user_id>/delete/", views.admin_user_delete, name="admin_user_delete"),
+
 ]

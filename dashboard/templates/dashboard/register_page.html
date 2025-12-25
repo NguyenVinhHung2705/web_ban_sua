@@ -1,98 +1,137 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="vi">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Đăng kí</title>
-    <link rel="stylesheet" href="{% static 'css/auth.css' %}">
-  </head>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đăng kí</title>
+  <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+</head>
 
-  <body>
-    <div class="auth-shell">
-      <!-- Left: Branding -->
-      <section class="brand-panel">
-        <div class="brand-content">
-          <div class="brand-badge">🧾 Tạo tài khoản mới</div>
-          <h1 class="brand-title">Bắt đầu ngay</h1>
-          <p class="brand-sub">
-            Tạo tài khoản để sử dụng đầy đủ tính năng. Sau khi đăng kí thành công, bạn sẽ được chuyển sang trang đăng nhập.
-          </p>
+<body>
+  <div class="auth-shell">
 
-          <div class="brand-links">
-            <a class="link-pill" href="{% url 'dashboard' %}">🏠 Trang chủ</a>
-            <a class="link-pill" href="{% url 'to_login_page' %}">🔑 Đăng nhập</a>
-          </div>
+    <!-- =========================
+         LEFT: BRANDING
+         ========================= -->
+    <section class="brand-panel">
+      <div class="brand-content">
+        <div class="brand-badge">🧾 Tạo tài khoản mới</div>
+        <h1 class="brand-title">Bắt đầu ngay</h1>
+
+        <p class="brand-sub">
+          Tạo tài khoản để sử dụng đầy đủ tính năng. Sau khi đăng kí thành công, bạn sẽ được chuyển sang trang đăng nhập.
+        </p>
+
+        <div class="brand-links">
+          <a class="link-pill" href="{% url 'dashboard' %}">🏠 Trang chủ</a>
+          <a class="link-pill" href="{% url 'to_login_page' %}">🔑 Đăng nhập</a>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <!-- Right: Form -->
-      <main class="card">
-        <div class="header">
-          <div>
-            <h2 class="title">Đăng kí</h2>
-            <p class="subtitle">Điền thông tin để tạo tài khoản.</p>
-          </div>
-          <a class="home-link" href="{% url 'dashboard' %}">Về trang chủ</a>
+    <!-- =========================
+         RIGHT: REGISTER FORM
+         ========================= -->
+    <main class="card">
+      <div class="header">
+        <div>
+          <h2 class="title">Đăng kí</h2>
+          <p class="subtitle">Điền thông tin để tạo tài khoản.</p>
         </div>
+        <a class="home-link" href="{% url 'dashboard' %}">Về trang chủ</a>
+      </div>
 
-        <form class="form" method="post" novalidate>
-          {% csrf_token %}
+      <!-- novalidate: nếu bạn muốn validate backend là chính -->
+      <form class="form" method="post" novalidate autocomplete="off">
+        {% csrf_token %}
 
-          {% if error_message %}
-            <div class="alert alert-danger">{{ error_message }}</div>
-          {% endif %}
-
-          {% if success_message %}
-            <div id="success-box" class="alert alert-success">
-              {{ success_message }}.<br>
-              Chuyển đến trang đăng nhập sau
-              <span id="countdown" class="countdown">5</span> giây...
-            </div>
-          {% endif %}
-
-          <div class="field">
-            <label>Username</label>
-            <input class="input" type="text" name="username" placeholder="Ví dụ: binhdoan01" required />
-          </div>
-
-          <div class="row">
-            <div class="field" style="flex:1">
-              <label>Password</label>
-              <input class="input" type="password" name="password" placeholder="Tối thiểu 6 ký tự" required />
-            </div>
-
-            <div class="field" style="flex:1">
-              <label>Confirm password</label>
-              <input class="input" type="password" name="confirm_password" placeholder="Nhập lại mật khẩu" required />
-            </div>
-          </div>
-
-          <button class="btn" type="submit">Đăng kí</button>
-
-          <div class="footer">
-            Đã có tài khoản?
-            <a href="{% url 'to_login_page'%}">Đăng nhập ngay</a>
-          </div>
-        </form>
-
-        {% if success_message %}
-        <script>
-          let seconds = 5;
-          const countdownEl = document.getElementById("countdown");
-
-          const timer = setInterval(() => {
-            seconds--;
-            countdownEl.textContent = seconds;
-
-            if (seconds <= 0) {
-              clearInterval(timer);
-              window.location.href = "{% url 'to_login_page' %}";
-            }
-          }, 1000);
-        </script>
+        <!-- Báo lỗi từ backend -->
+        {% if error_message %}
+          <div class="alert alert-danger">{{ error_message }}</div>
         {% endif %}
-      </main>
-    </div>
-  </body>
+
+        <!-- Báo thành công + countdown -->
+        {% if success_message %}
+          <div id="success-box" class="alert alert-success">
+            {{ success_message }}.<br>
+            Chuyển đến trang đăng nhập sau
+            <span id="countdown" class="countdown">5</span> giây...
+          </div>
+        {% endif %}
+
+        <!-- Username -->
+        <div class="field">
+          <label for="username">Username</label>
+          <input
+            id="username"
+            class="input"
+            type="text"
+            name="username"
+            placeholder="Ví dụ: binhdoan01"
+            required
+          />
+        </div>
+
+        <!-- Password + Confirm -->
+        <div class="row">
+
+          <div class="field" style="flex:1">
+            <label for="password">Password</label>
+            <input
+              id="password"
+              class="input"
+              type="password"
+              name="password"
+              placeholder="Tối thiểu 6 ký tự"
+              required
+            />
+          </div>
+
+          <div class="field" style="flex:1">
+            <label for="confirm_password">Confirm password</label>
+            <input
+              id="confirm_password"
+              class="input"
+              type="password"
+              name="confirm_password"
+              placeholder="Nhập lại mật khẩu"
+              required
+            />
+          </div>
+
+        </div>
+
+        <button class="btn" type="submit">Đăng kí</button>
+
+        <div class="footer">
+          Đã có tài khoản?
+          <a href="{% url 'to_login_page' %}">Đăng nhập ngay</a>
+        </div>
+      </form>
+
+      <!-- Countdown redirect chỉ chạy khi success_message tồn tại -->
+      {% if success_message %}
+        <script>
+          (function () {
+            let seconds = 5;
+            const countdownEl = document.getElementById("countdown");
+            if (!countdownEl) return;
+
+            const timer = setInterval(() => {
+              seconds--;
+              countdownEl.textContent = seconds;
+
+              if (seconds <= 0) {
+                clearInterval(timer);
+                window.location.href = "{% url 'to_login_page' %}";
+              }
+            }, 1000);
+          })();
+        </script>
+      {% endif %}
+
+    </main>
+  </div>
+</body>
 </html>

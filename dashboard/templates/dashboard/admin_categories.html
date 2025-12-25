@@ -5,51 +5,85 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin - Danh mục</title>
+  <!-- CSS chung cho admin -->
   <link rel="stylesheet" href="{% static 'css/admin_page.css' %}">
 </head>
 <body>
 
 <div class="container">
+  <!-- ===== TOP BAR ===== -->
   <div class="topbar">
-    <div class="brand"><a href="{% url 'to_admin_page' %}">← Admin</a></div>
-    <div class="muted">Xin chào <b>{{ account.username }}</b></div>
+    <div class="brand">
+      <!-- Link quay về trang admin chính -->
+      <a href="{% url 'to_admin_page' %}">← Admin</a>
+    </div>
+
+    <!-- Hiển thị user đang đăng nhập -->
+    <div class="muted">
+      Xin chào <b>{{ account.username }}</b>
+    </div>
   </div>
 
   <div class="page-card">
+    <!-- ===== HEADER + CTA ===== -->
     <div class="section-head">
       <div>
         <h1>Quản lý danh mục</h1>
+        <!-- Tổng số danh mục dựa vào paginator -->
         <div class="muted">Tổng: {{ page_obj.paginator.count }} danh mục</div>
       </div>
-      <a class="btn primary" href="{% url 'admin_category_create' %}">+ Thêm danh mục</a>
+
+      <!-- Nút thêm danh mục -->
+      <a class="btn primary" href="{% url 'admin_category_create' %}">
+        + Thêm danh mục
+      </a>
     </div>
 
-    <form method="get" style="display:flex; gap:10px; align-items:center; margin-top:12px;">
-      <input type="text" name="q" value="{{ q|default:'' }}" placeholder="Tìm theo tên danh mục..." style="max-width:320px;">
+    <!-- ===== SEARCH FORM (GET) ===== -->
+    <form method="get" class="admin-search">
+      <!-- q: query tìm theo tên danh mục -->
+      <input
+        type="text"
+        name="q"
+        value="{{ q|default:'' }}"
+        placeholder="Tìm theo tên danh mục..."
+        class="admin-search__input"
+      />
+
       <button class="btn secondary" type="submit">Tìm</button>
+
+      <!-- Nếu đang có q thì hiện nút xóa lọc -->
       {% if q %}
         <a class="btn" href="{% url 'admin_categories' %}">Xóa lọc</a>
       {% endif %}
     </form>
 
-    <div style="margin-top:14px; display:grid; gap:12px;">
+    <!-- ===== LIST ===== -->
+    <div class="admin-list">
       {% for c in page_obj %}
-        <div class="card" style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-          <div>
-            <div style="font-weight:900;">{{ c.category_name }}</div>
+        <div class="card admin-item">
+          <!-- Thông tin danh mục -->
+          <div class="admin-item__info">
+            <div class="admin-item__title">{{ c.category_name }}</div>
 
-            <!-- ✅ đổi Quantity -> Số sản phẩm (product_count). Nếu không có annotate thì default 0 -->
-            <div class="muted" style="font-size:13px;">
+            <!-- product_count: nếu view có annotate thì hiện số SP, không có thì default 0 -->
+            <div class="muted admin-item__meta">
               ID: {{ c.category_id }} • Sản phẩm: {{ c.product_count|default:0 }}
             </div>
           </div>
 
-          <div style="display:flex; gap:10px;">
-            <a class="btn secondary" href="{% url 'admin_category_edit' c.category_id %}">Sửa</a>
+          <!-- Hành động -->
+          <div class="admin-item__actions">
+            <a class="btn secondary" href="{% url 'admin_category_edit' c.category_id %}">
+              Sửa
+            </a>
 
-            <form method="post" action="{% url 'admin_category_delete' c.category_id %}" style="margin:0;">
+            <!-- Xóa: dùng POST + CSRF -->
+            <form method="post" action="{% url 'admin_category_delete' c.category_id %}" class="admin-item__delete-form">
               {% csrf_token %}
-              <button class="btn" type="submit" onclick="return confirm('Xóa danh mục này?')">Xóa</button>
+              <button class="btn" type="submit" onclick="return confirm('Xóa danh mục này?')">
+                Xóa
+              </button>
             </form>
           </div>
         </div>
@@ -58,16 +92,23 @@
       {% endfor %}
     </div>
 
+    <!-- ===== PAGINATION ===== -->
     {% if page_obj.paginator.num_pages > 1 %}
-      <div style="display:flex; gap:8px; justify-content:center; margin-top:16px; flex-wrap:wrap;">
+      <div class="admin-pagination">
         {% if page_obj.has_previous %}
-          <a class="btn" href="?q={{ q|urlencode }}&page={{ page_obj.previous_page_number }}">‹ Trước</a>
+          <a class="btn" href="?q={{ q|urlencode }}&page={{ page_obj.previous_page_number }}">
+            ‹ Trước
+          </a>
         {% endif %}
 
-        <span class="chip">Trang {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        <span class="chip">
+          Trang {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+        </span>
 
         {% if page_obj.has_next %}
-          <a class="btn" href="?q={{ q|urlencode }}&page={{ page_obj.next_page_number }}">Sau ›</a>
+          <a class="btn" href="?q={{ q|urlencode }}&page={{ page_obj.next_page_number }}">
+            Sau ›
+          </a>
         {% endif %}
       </div>
     {% endif %}

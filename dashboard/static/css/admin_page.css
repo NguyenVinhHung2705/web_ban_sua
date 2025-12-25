@@ -584,4 +584,51 @@ td{vertical-align:middle;}
   border:1px solid rgba(15,23,42,.12);
   background:#fff;
 }
+/* Search row */
+.admin-search{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  margin-top:12px;
+}
+.admin-search__input{
+  max-width:320px;
+}
+
+/* List wrapper */
+.admin-list{
+  margin-top:14px;
+  display:grid;
+  gap:12px;
+}
+
+/* Item row */
+.admin-item{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+}
+.admin-item__title{
+  font-weight:900;
+}
+.admin-item__meta{
+  font-size:13px;
+}
+.admin-item__actions{
+  display:flex;
+  gap:10px;
+}
+.admin-item__delete-form{
+  margin:0;
+}
+
+/* Pagination */
+.admin-pagination{
+  display:flex;
+  gap:8px;
+  justify-content:center;
+  margin-top:16px;
+  flex-wrap:wrap;
+}
 

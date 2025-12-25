@@ -27,7 +27,8 @@
 
     <div class="subhead">
       <div class="left">
-        <span class="chip2">Tổng số đơn: <b>{{ orders|length }}</b></span>
+        <!-- ✅ SỬA Ở ĐÂY: orders|length -> orders.count -->
+        <span class="chip2">Tổng số đơn: <b>{{ orders.count }}</b></span>
         <span class="chip2">Gợi ý: <b>Click “Xem”</b> để xem chi tiết</span>
       </div>
       <span class="chip2">Cập nhật trạng thái trong chi tiết đơn</span>

@@ -11,6 +11,9 @@
 </head>
 <body>
 
+<!-- =========================
+     HEADER
+     ========================= -->
 <header class="header">
   <div class="header-inner">
     <a class="logo" href="{% url 'dashboard' %}">
@@ -36,77 +39,110 @@
 </header>
 
 <main class="wrap">
+
   <div class="pd-card">
     <div class="pd-grid">
 
-      <!-- LEFT: gallery -->
+      <!-- =========================
+           LEFT: GALLERY
+           ========================= -->
       <div class="pd-gallery">
+
+        <!-- Thumbnails -->
         <div class="pd-thumbs">
           {% if p.image %}
+            <!-- Ảnh chính -->
             <button type="button" class="pd-thumb is-active" data-src="{{ p.image.url }}">
               <img src="{{ p.image.url }}" alt="{{ p.product_name }}">
             </button>
           {% endif %}
 
-          {# ✅ ẢNH PHỤ THẬT: lấy từ ProductImage (related_name="gallery") #}
+          {# Ảnh phụ: related_name="gallery" #}
           {% for g in p.gallery.all %}
             {% if g.image %}
-              <button type="button" class="pd-thumb {% if not p.image and forloop.first %}is-active{% endif %}" data-src="{{ g.image.url }}">
+              <button
+                type="button"
+                class="pd-thumb {% if not p.image and forloop.first %}is-active{% endif %}"
+                data-src="{{ g.image.url }}"
+              >
                 <img src="{{ g.image.url }}" alt="{{ p.product_name }}">
               </button>
             {% endif %}
           {% endfor %}
 
-          {% if not p.image and not p.gallery.all %}
+          {# Nếu không có ảnh chính + không có ảnh phụ #}
+          {% if not p.image and p.gallery.all|length == 0 %}
             <div class="muted" style="font-size:13px;">(Chưa có ảnh)</div>
           {% endif %}
         </div>
 
+        <!-- Main image -->
         <div class="pd-main">
           {% if p.image %}
             <img id="pdMainImg" src="{{ p.image.url }}" alt="{{ p.product_name }}">
-          {% elif p.gallery.all %}
-            {# nếu không có ảnh chính thì lấy ảnh phụ đầu tiên làm ảnh main #}
+
+          {% elif p.gallery.all|length > 0 and p.gallery.all.0.image %}
+            {# Không có ảnh chính => lấy ảnh phụ đầu tiên làm ảnh main #}
             <img id="pdMainImg" src="{{ p.gallery.all.0.image.url }}" alt="{{ p.product_name }}">
+
           {% else %}
             <div class="muted" style="height:260px; display:grid; place-items:center; border:1px dashed rgba(15,23,42,.18); border-radius:14px;">
               No image
             </div>
           {% endif %}
         </div>
+
       </div>
 
-      <!-- RIGHT: info -->
+      <!-- =========================
+           RIGHT: INFO
+           ========================= -->
       <div class="pd-info">
-        <div class="pd-cat">{{ p.category.category_name|default:"(Chưa có danh mục)" }}</div>
+
+        <!-- Category: tránh lỗi nếu p.category null -->
+        <div class="pd-cat">
+          {% if p.category %}
+            {{ p.category.category_name }}
+          {% else %}
+            (Chưa có danh mục)
+          {% endif %}
+        </div>
+
         <h1 class="pd-title">{{ p.product_name }}</h1>
 
         <div class="pd-price-row">
           <div class="pd-price">{{ p.price|vnd }}</div>
 
+          <!-- Badges -->
           <div class="pd-badges">
-            {% if p.is_genuine %}
-              <span class="pd-badge">✅ Chính hãng</span>
-            {% endif %}
-            {% if p.is_fast_ship %}
-              <span class="pd-badge">🚚 Giao nhanh</span>
-            {% endif %}
+            {% if p.is_genuine %}<span class="pd-badge">✅ Chính hãng</span>{% endif %}
+            {% if p.is_fast_ship %}<span class="pd-badge">🚚 Giao nhanh</span>{% endif %}
           </div>
         </div>
 
+        <!-- Short description -->
         <div class="pd-short">
           {{ p.description|default:"Sản phẩm chính hãng, phù hợp cho bé và gia đình. Hỗ trợ đổi trả 7 ngày." }}
         </div>
 
+        <!-- Actions -->
         <div class="pd-actions">
           {% if request.session.account_id %}
-            <a class="btn primary" href="{% url 'add_to_cart' p.product_id %}">Thêm vào giỏ</a>
+
+            {# Add to cart nên POST để đúng chuẩn #}
+            <form method="post" action="{% url 'add_to_cart' p.product_id %}" style="display:inline;">
+              {% csrf_token %}
+              <button class="btn primary" type="submit">Thêm vào giỏ</button>
+            </form>
+
             <a class="btn secondary" href="{% url 'checkout' %}">Mua ngay</a>
+
           {% else %}
             <a class="btn primary" href="{% url 'to_login_page' %}">Đăng nhập để mua</a>
           {% endif %}
         </div>
 
+        <!-- Meta -->
         <div class="pd-meta">
           <div class="pd-meta-item">
             <div class="muted">Gợi ý</div>
@@ -121,13 +157,17 @@
             <b>{{ p.return_policy|default:"7 ngày nếu lỗi" }}</b>
           </div>
         </div>
+
       </div>
     </div>
 
-    <!-- DETAILS -->
+    <!-- =========================
+         DETAILS
+         ========================= -->
     <div class="pd-divider"></div>
 
     <div class="pd-detail-grid">
+
       <div class="pd-block">
         <h3>Mô tả sản phẩm</h3>
         <p class="muted" style="line-height:1.7; margin:0;">
@@ -151,10 +191,13 @@
           <div><span class="muted">Carb</span><b>{{ p.carb_g|floatformat:1 }} g</b></div>
         </div>
       </div>
+
     </div>
   </div>
 
-  <!-- RELATED -->
+  <!-- =========================
+       RELATED PRODUCTS
+       ========================= -->
   <section class="section">
     <div class="section-head">
       <h2>Sản phẩm liên quan</h2>
@@ -164,6 +207,7 @@
     <div class="product-grid">
       {% for rp in related %}
         <div class="product-card">
+
           <a class="product-img" href="{% url 'product_detail' rp.product_id %}">
             {% if rp.image %}
               <img src="{{ rp.image.url }}" alt="{{ rp.product_name }}">
@@ -178,31 +222,46 @@
 
           <div class="product-meta">
             <div class="product-price">{{ rp.price|vnd }}</div>
-            <div class="product-cat">{{ rp.category.category_name }}</div>
+
+            <!-- related category: cũng nên check null -->
+            <div class="product-cat">
+              {% if rp.category %}{{ rp.category.category_name }}{% else %}(Chưa có){% endif %}
+            </div>
           </div>
 
-          <div class="product-desc">{{ rp.description }}</div>
+          {% if rp.description %}
+            <div class="product-desc">{{ rp.description }}</div>
+          {% endif %}
 
           {% if request.session.account_id %}
-            <a class="btn primary product-btn" href="{% url 'add_to_cart' rp.product_id %}">Thêm vào giỏ</a>
+            <form method="post" action="{% url 'add_to_cart' rp.product_id %}">
+              {% csrf_token %}
+              <button class="btn primary product-btn" type="submit">Thêm vào giỏ</button>
+            </form>
           {% else %}
             <a class="btn secondary product-btn" href="{% url 'to_login_page' %}">Đăng nhập để mua</a>
           {% endif %}
+
         </div>
       {% empty %}
         <p class="muted">Chưa có sản phẩm liên quan.</p>
       {% endfor %}
     </div>
   </section>
+
 </main>
 
+<!-- =========================
+     JS: click thumb đổi ảnh main
+     ========================= -->
 <script>
-  // gallery thumbnails -> swap main image
   const mainImg = document.getElementById("pdMainImg");
+
   document.querySelectorAll(".pd-thumb").forEach(btn => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".pd-thumb").forEach(b => b.classList.remove("is-active"));
       btn.classList.add("is-active");
+
       const src = btn.getAttribute("data-src");
       if (src && mainImg) mainImg.src = src;
     });

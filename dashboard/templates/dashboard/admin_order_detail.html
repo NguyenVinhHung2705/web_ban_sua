@@ -14,38 +14,55 @@
 <body>
 
 <div class="container">
+  <!-- ===== TOP BAR ===== -->
   <div class="topbar">
     <div class="brand">
+      <!-- Quay lại danh sách đơn -->
       <a href="{% url 'admin_orders' %}">← Danh sách đơn</a>
     </div>
+
     <div class="muted">
-      {% if account %}Xin chào <b>{{ account.username }}</b>{% endif %}
+      <!-- account có thể null => check trước khi hiển thị -->
+      {% if account %}
+        Xin chào <b>{{ account.username }}</b>
+      {% endif %}
     </div>
   </div>
 
+  <!-- ===== TITLE ===== -->
   <h1>Đơn #{{ order.order_id }}</h1>
 
+  <!-- ===== ORDER SUMMARY ===== -->
   <div class="card" style="display:grid; gap:10px;">
+
+    <!-- Row 1: Khách + Thời gian tạo đơn -->
     <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
       <div>
         <div class="muted">Khách</div>
+        <!-- Username người đặt -->
         <div style="font-weight:900;">{{ order.account.username }}</div>
       </div>
+
       <div style="text-align:right;">
         <div class="muted">Thời gian</div>
+        <!-- localtime để hiển thị đúng timezone -->
         <div style="font-weight:900;">
           {{ order.created_at|localtime|date:"d/m/Y H:i" }}
         </div>
       </div>
     </div>
 
+    <!-- Row 2: Thông tin nhận hàng + Tổng tiền + Trạng thái -->
     <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
       <div>
         <div class="muted">Người nhận</div>
+
+        <!-- receiver_* có thể null => dùng default -->
         <div>
           <b>{{ order.receiver_name|default:"(chưa có)" }}</b>
           — {{ order.receiver_phone|default:"(chưa có)" }}
         </div>
+
         <div class="muted" style="margin-top:4px;">
           {{ order.receiver_address|default:"(chưa có)" }}
         </div>
@@ -53,45 +70,83 @@
 
       <div style="text-align:right;">
         <div class="muted">Tổng tiền</div>
+
+        <!-- total_amount format VND (filter custom: vnd) -->
         <div style="font-weight:900; font-size:18px;">
           {{ order.total_amount|vnd }}
         </div>
+
         <div class="muted" style="margin-top:6px;">
           Trạng thái: <b>{{ order.status }}</b>
         </div>
       </div>
     </div>
 
-    <form method="post"
-          action="{% url 'admin_order_update_status' order.order_id %}"
-          style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+    <!-- ===== UPDATE STATUS FORM ===== -->
+    <form
+      method="post"
+      action="{% url 'admin_order_update_status' order.order_id %}"
+      style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;"
+    >
       {% csrf_token %}
-      <select name="status" style="padding:10px 12px; border-radius:12px; border:1px solid rgba(15,23,42,.12);">
-        <option value="PENDING" {% if order.status == "PENDING" %}selected{% endif %}>PENDING</option>
-        <option value="PAID" {% if order.status == "PAID" %}selected{% endif %}>PAID</option>
-        <option value="FAILED" {% if order.status == "FAILED" %}selected{% endif %}>FAILED</option>
+
+      <!-- Select trạng thái (giữ nguyên enum/status bạn đang dùng) -->
+      <label for="status" class="muted" style="font-weight:600;">Đổi trạng thái</label>
+
+      <select
+        id="status"
+        name="status"
+        style="padding:10px 12px; border-radius:12px; border:1px solid rgba(15,23,42,.12);"
+      >
+        <option value="PENDING"   {% if order.status == "PENDING" %}selected{% endif %}>PENDING</option>
+        <option value="PAID"      {% if order.status == "PAID" %}selected{% endif %}>PAID</option>
+        <option value="FAILED"    {% if order.status == "FAILED" %}selected{% endif %}>FAILED</option>
         <option value="CANCELLED" {% if order.status == "CANCELLED" %}selected{% endif %}>CANCELLED</option>
       </select>
+
       <button class="btn primary" type="submit">Cập nhật trạng thái</button>
     </form>
   </div>
 
+  <!-- ===== ITEMS ===== -->
   <h2 style="margin-top:14px;">Sản phẩm</h2>
 
   <div class="grid" style="grid-template-columns:1fr; gap:12px;">
     {% for it in items %}
-      <div class="card" style="display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap;">
+      <div
+        class="card"
+        style="display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap;"
+      >
+        <!-- Left: Image + Name + Price x Qty -->
         <div style="display:flex; gap:12px; align-items:center; min-width:260px;">
-          <div style="width:80px; height:80px; border-radius:12px; overflow:hidden; border:1px solid rgba(15,23,42,.10); background:#fff;">
+          <!-- Image box -->
+          <div
+            style="width:80px; height:80px; border-radius:12px; overflow:hidden;
+                   border:1px solid rgba(15,23,42,.10); background:#fff;"
+          >
+            {# Ưu tiên: ảnh trực tiếp từ Product (ForeignKey) #}
             {% if it.product and it.product.image %}
-              <img src="{{ it.product.image.url }}" alt="{{ it.product_name }}" style="width:100%; height:100%; object-fit:cover;">
+              <img
+                src="{{ it.product.image.url }}"
+                alt="{{ it.product_name }}"
+                style="width:100%; height:100%; object-fit:cover;"
+              >
+
+            {# Fallback: ảnh snapshot lưu theo tên file (product_image_name) #}
             {% elif it.product_image_name %}
-              <img src="{{ MEDIA_PREFIX }}{{ it.product_image_name }}" alt="{{ it.product_name }}" style="width:100%; height:100%; object-fit:cover;">
+              <img
+                src="{{ MEDIA_PREFIX }}{{ it.product_image_name }}"
+                alt="{{ it.product_name }}"
+                style="width:100%; height:100%; object-fit:cover;"
+              >
+
+            {# Không có ảnh #}
             {% else %}
               <div class="muted" style="display:grid; place-items:center; height:100%;">No img</div>
             {% endif %}
           </div>
 
+          <!-- Product info -->
           <div style="flex:1;">
             <div style="font-weight:900;">{{ it.product_name }}</div>
             <div class="muted">
@@ -100,8 +155,11 @@
           </div>
         </div>
 
+        <!-- Right: Line total -->
         <div style="text-align:right;">
           <div class="muted" style="font-size:13px;">Thành tiền</div>
+
+          {# Nếu view đã tính line_total thì dùng, không có thì fallback #}
           {% if it.line_total %}
             <div style="font-weight:900;">{{ it.line_total|vnd }}</div>
           {% else %}
@@ -109,6 +167,7 @@
           {% endif %}
         </div>
       </div>
+
     {% empty %}
       <div class="card">
         <div class="muted">Không có sản phẩm trong đơn.</div>

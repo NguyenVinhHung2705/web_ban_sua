@@ -1,0 +1,112 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Thêm người dùng</title>
+  <link rel="stylesheet" href="{% static 'css/admin_page.css' %}">
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ===== TOP BAR ===== -->
+  <div class="topbar">
+    <div class="brand">
+      <a href="{% url 'admin_users' %}">← Người dùng</a>
+    </div>
+    <div class="muted">
+      Xin chào <b>{{ account.username }}</b>
+    </div>
+  </div>
+
+  <div class="page-card">
+    <div class="section-head">
+      <h1>Thêm người dùng</h1>
+    </div>
+
+    <!-- Thông báo lỗi nếu view truyền error_message -->
+    {% if error_message %}
+      <div class="alert">{{ error_message }}</div>
+    {% endif %}
+
+    <!-- Form tạo user (POST) -->
+    <form method="post" autocomplete="off">
+      {% csrf_token %}
+
+      <!-- ===== GRID 1: thông tin đăng nhập + quyền + trạng thái ===== -->
+      <div class="form-grid">
+
+        <div class="field">
+          <label for="username">Username</label>
+          <input id="username" name="username" required>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <!-- type=password để ẩn ký tự -->
+          <input id="password" type="password" name="password" required>
+        </div>
+
+        <div class="field">
+          <label for="role">Role</label>
+          <select id="role" name="role">
+            <option value="USER">USER</option>
+            <option value="ADMIN">ADMIN</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="status">Trạng thái</label>
+          <select id="status" name="status">
+            <option value="normal">normal</option>
+            <option value="locked">locked</option>
+          </select>
+        </div>
+
+      </div>
+
+      <!-- ===== GRID 2: thông tin cá nhân (tuỳ chọn) ===== -->
+      <div class="form-grid" style="margin-top:12px;">
+
+        <div class="field">
+          <label for="full_name">Họ tên</label>
+          <input id="full_name" name="full_name">
+        </div>
+
+        <div class="field">
+          <label for="date_of_birth">Ngày sinh</label>
+          <!-- bạn đang set default 2025-01-01 -->
+          <input id="date_of_birth" type="date" name="date_of_birth" value="2025-01-01">
+        </div>
+
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" type="email" name="email" placeholder="(có thể để trống)">
+        </div>
+
+        <div class="field">
+          <label for="phone_number">SĐT</label>
+          <input id="phone_number" name="phone_number" placeholder="(có thể để trống)">
+        </div>
+
+        <div class="field">
+          <label for="balance">Số dư ví</label>
+          <input id="balance" type="number" step="0.01" name="balance" value="0" inputmode="decimal">
+        </div>
+
+      </div>
+
+      <!-- ===== ACTIONS ===== -->
+      <div style="display:flex; gap:10px; margin-top:14px;">
+        <button class="btn primary" type="submit">Lưu</button>
+        <a class="btn" href="{% url 'admin_users' %}">Hủy</a>
+      </div>
+    </form>
+
+  </div>
+</div>
+
+</body>
+</html>

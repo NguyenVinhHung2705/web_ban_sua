@@ -1,4 +1,6 @@
 {% load static %}
+{% load formatters %}
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -9,6 +11,9 @@
 </head>
 <body>
 
+<!-- =========================
+     HEADER
+     ========================= -->
 <header class="header">
   <div class="header-inner">
     <a class="logo" href="{% url 'dashboard' %}">
@@ -27,31 +32,61 @@
 <main class="wrap">
   <h2 style="margin: 10px 0 12px;">Nạp ví (Demo)</h2>
 
+  <!-- =========================
+       ERROR MESSAGE
+       ========================= -->
   {% if error_message %}
     <div class="card" style="border:1px solid rgba(239,68,68,.25); background:rgba(239,68,68,.06); color:#991b1b;">
       {{ error_message }}
     </div>
   {% endif %}
 
+  <!-- =========================
+       WALLET INFO + TOPUP FORM
+       ========================= -->
   <div class="card">
+
+    <!-- Thông tin người dùng + số dư -->
     <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
       <div>
         <div style="color:var(--muted); font-size:13px;">Người dùng</div>
         <div style="font-weight:900;">{{ account.username }}</div>
       </div>
+
       <div style="text-align:right;">
         <div style="color:var(--muted); font-size:13px;">Số dư hiện tại</div>
-        <div style="font-weight:900; font-size:18px;">{{ balance }}</div>
+        <!-- Format tiền: dùng filter vnd -->
+        <div style="font-weight:900; font-size:18px;">{{ balance|vnd }}</div>
       </div>
     </div>
 
-    <form method="post" style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+    <!-- Form nạp tiền: POST + CSRF -->
+    <form method="post"
+          style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
       {% csrf_token %}
-      <input type="number" name="amount" step="0.01" min="0" placeholder="Nhập số tiền (vd: 500000)" style="flex:1; min-width:240px; padding:12px; border-radius:12px; border:1px solid rgba(15,23,42,.12);" required>
+
+      <div style="flex:1; min-width:240px;">
+        <label for="amount" style="display:block; color:var(--muted); font-size:13px; margin-bottom:6px;">
+          Số tiền nạp
+        </label>
+
+        <input
+          id="amount"
+          type="number"
+          name="amount"
+          step="0.01"
+          min="0"
+          placeholder="Nhập số tiền (vd: 500000)"
+          style="width:100%; padding:12px; border-radius:12px; border:1px solid rgba(15,23,42,.12);"
+          required
+        >
+      </div>
+
       <button class="btn primary" type="submit">Nạp</button>
       <a class="btn secondary" href="{% url 'dashboard' %}">Hủy</a>
     </form>
 
+    <!-- Note: demo -->
     <div style="margin-top:10px; color:var(--muted); font-size:13px;">
       * Đây là chức năng demo để test thanh toán.
     </div>

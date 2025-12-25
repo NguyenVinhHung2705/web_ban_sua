@@ -4,10 +4,8 @@ from datetime import date
 from django.shortcuts import redirect, render, get_object_or_404
 from django.db import transaction
 from django.db.models import Sum, Q, Max, Count
-from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
-
 
 from .models import (
     Account, AccountProfile, Wallet,
@@ -16,31 +14,59 @@ from .models import (
     Order, OrderItem
 )
 
-# =========================
-# Helpers
-# =========================
+
+# =========================================================
+# Helpers (Hàm dùng chung)
+# =========================================================
 def get_logged_in_account(request):
+    """
+    Lấy account đang đăng nhập từ session.
+    Trả về None nếu chưa đăng nhập.
+    """
     account_id = request.session.get("account_id")
     if not account_id:
         return None
+
+    # Có thể dùng select_related nếu bạn đã khai báo OneToOne / FK đúng tên.
     return Account.objects.filter(id=account_id).first()
 
 
 def build_common_ctx(account):
-    """Context chung cho header"""
+    """
+    Context chung cho header: account, balance, total_cart_item
+    - balance: lấy từ wallet (nếu có)
+    - total_cart_item: số dòng CartItem (distinct items) trong giỏ (nếu có cart)
+    """
     if not account:
         return {"account": None, "balance": 0, "total_cart_item": 0}
-    balance = account.wallet.balance if hasattr(account, "wallet") else 0
-    total_cart_item = account.cart.quantity if hasattr(account, "cart") else 0
+
+    # Wallet (OneToOne) có thể raise RelatedObjectDoesNotExist -> dùng try cho chắc
+    try:
+        balance = account.wallet.balance
+    except Exception:
+        balance = Decimal("0")
+
+    # Cart (OneToOne) tương tự
+    try:
+        total_cart_item = CartItem.objects.filter(cart=account.cart).count()
+    except Exception:
+        total_cart_item = 0
+
     return {"account": account, "balance": balance, "total_cart_item": total_cart_item}
 
 
 def _recalc_cart_quantity(cart):
+    """
+    Cập nhật cart.quantity = tổng số lượng (sum quantity) của các CartItem.
+    """
     cart.quantity = CartItem.objects.filter(cart=cart).aggregate(s=Sum("quantity"))["s"] or 0
-    cart.save()
+    cart.save(update_fields=["quantity"])
 
 
 def _to_decimal(val, default="0"):
+    """
+    Parse Decimal an toàn (tránh crash khi input bậy).
+    """
     try:
         return Decimal(str(val).strip())
     except Exception:
@@ -48,13 +74,34 @@ def _to_decimal(val, default="0"):
 
 
 def _to_int(val, default=0):
+    """
+    Parse int an toàn.
+    """
     try:
         return int(val)
     except Exception:
         return default
 
+
+def _to_date(val, default_date=date(2025, 1, 1)):
+    """
+    Parse date từ string dạng YYYY-MM-DD.
+    - Nếu parse fail -> dùng default_date.
+    """
+    try:
+        if isinstance(val, date):
+            return val
+        s = str(val).strip()
+        if not s:
+            return default_date
+        return date.fromisoformat(s)
+    except Exception:
+        return default_date
+
+
 def _admin_required(request):
     """
+    Check admin:
     Return: (account, resp)
     - resp != None => redirect response
     """
@@ -69,55 +116,50 @@ def _admin_required(request):
     return account, None
 
 
+def _redirect_back(request, fallback_url_name):
+    """
+    Redirect về trang trước (HTTP_REFERER) nếu có,
+    nếu không có -> redirect về fallback_url_name.
+    """
+    return redirect(request.META.get("HTTP_REFERER") or fallback_url_name)
+
+
+# =========================================================
+# Admin - Categories
+# =========================================================
 def admin_categories(request):
     account, resp = _admin_required(request)
     if resp:
         return resp
 
-    # nhận q hoặc keyword (đỡ bị lệch name input)
     q = (request.GET.get("q") or request.GET.get("keyword") or "").strip()
-
-    # ✅ NOTE:
-    # Nếu Product FK đến Category mà bạn có related_name="product" thì Count("product") OK.
-    # Nếu không set related_name thì phải là "product_set".
-    # Mình làm kiểu “tự đoán” để không bị lỗi.
-    accessor = "product"
-    try:
-        Category._meta.get_field(accessor)
-        # nếu Category có field tên product thì thôi (hiếm)
-    except Exception:
-        # kiểm tra related accessor thực tế
-        rel_names = [r.get_accessor_name() for r in Category._meta.related_objects]
-        if "product" in rel_names:
-            accessor = "product"
-        elif "product_set" in rel_names:
-            accessor = "product_set"
-        elif "products" in rel_names:
-            accessor = "products"
 
     qs = Category.objects.all()
 
-    # annotate đếm sản phẩm (nếu accessor tồn tại)
-    try:
-        qs = qs.annotate(product_count=Count(accessor))
-    except Exception:
-        # nếu annotate fail thì thôi, vẫn list bình thường
-        pass
+    # ✅ Đếm số sản phẩm trong danh mục (product_count)
+    # Tìm accessor của Product -> Category
+    accessor = None
+    for rel in Category._meta.related_objects:
+        if rel.related_model == Product:
+            accessor = rel.get_accessor_name()  # ví dụ: "product_set" hoặc "products" ...
+            break
+
+    if accessor:
+        try:
+            qs = qs.annotate(product_count=Count(accessor))
+        except Exception:
+            pass  # annotate fail thì thôi, vẫn list bình thường
 
     if q:
         qs = qs.filter(category_name__icontains=q)
 
-    # ✅ mặc định show mới nhất lên đầu (đỡ hiểu nhầm ID “bị đảo”)
     qs = qs.order_by("-category_id")
 
     paginator = Paginator(qs, 10)
     page_obj = paginator.get_page(request.GET.get("page"))
 
     ctx = build_common_ctx(account)
-    ctx.update({
-        "page_obj": page_obj,
-        "q": q,
-    })
+    ctx.update({"page_obj": page_obj, "q": q})
     return render(request, "dashboard/admin_categories.html", ctx)
 
 
@@ -132,16 +174,17 @@ def admin_category_create(request):
 
     name = (request.POST.get("category_name") or "").strip()
 
+    ctx = build_common_ctx(account)
+
     if not name:
-        ctx = build_common_ctx(account)
         ctx["error_message"] = "Vui lòng nhập tên danh mục."
         return render(request, "dashboard/admin_category_create.html", ctx)
 
     if Category.objects.filter(category_name__iexact=name).exists():
-        ctx = build_common_ctx(account)
         ctx["error_message"] = "Danh mục này đã tồn tại."
         return render(request, "dashboard/admin_category_create.html", ctx)
 
+    # quantity bạn đang dùng để sort ở dashboard (nav_categories), giữ nguyên
     Category.objects.create(category_name=name, quantity=0)
     return redirect("admin_categories")
 
@@ -159,21 +202,23 @@ def admin_category_edit(request, category_id):
         return render(request, "dashboard/admin_category_edit.html", ctx)
 
     name = (request.POST.get("category_name") or "").strip()
+    ctx = build_common_ctx(account)
+    ctx.update({"c": c})
+
     if not name:
-        ctx = build_common_ctx(account)
-        ctx.update({"c": c, "error_message": "Tên danh mục không được để trống."})
+        ctx["error_message"] = "Tên danh mục không được để trống."
         return render(request, "dashboard/admin_category_edit.html", ctx)
 
     if Category.objects.filter(category_name__iexact=name).exclude(category_id=c.category_id).exists():
-        ctx = build_common_ctx(account)
-        ctx.update({"c": c, "error_message": "Tên danh mục đã tồn tại."})
+        ctx["error_message"] = "Tên danh mục đã tồn tại."
         return render(request, "dashboard/admin_category_edit.html", ctx)
 
     c.category_name = name
-    c.save()
+    c.save(update_fields=["category_name"])
     return redirect("admin_categories")
 
 
+@require_POST
 def admin_category_delete(request, category_id):
     account, resp = _admin_required(request)
     if resp:
@@ -181,47 +226,81 @@ def admin_category_delete(request, category_id):
 
     c = get_object_or_404(Category, category_id=category_id)
 
-    # chặn xóa nếu có sản phẩm
+    # ✅ Chặn xóa nếu có sản phẩm
     if Product.objects.filter(category=c).exists():
         return redirect("admin_categories")
 
-    if request.method == "POST":
-        c.delete()
+    c.delete()
     return redirect("admin_categories")
 
-# =========================
+
+# =========================================================
 # Dashboard / Home
-# =========================
+# =========================================================
 def dashboard(request):
     account = get_logged_in_account(request)
     ctx = build_common_ctx(account)
 
     q = (request.GET.get("q") or "").strip()
+    cat = (request.GET.get("cat") or "").strip()
+    page = request.GET.get("page") or 1
 
-    qs = Product.objects.select_related("category").order_by("-product_id")
+    categories = Category.objects.all().order_by("category_name")
+    nav_categories = Category.objects.all().order_by("-quantity", "category_name")[:7]
+
+    active_cat = int(cat) if cat.isdigit() else None
+
+    qs = Product.objects.select_related("category").all().order_by("-product_id")
+
+    if active_cat:
+        qs = qs.filter(category_id=active_cat)
+
     if q:
         qs = qs.filter(
             Q(product_name__icontains=q)
             | Q(description__icontains=q)
             | Q(category__category_name__icontains=q)
         )
-        products = qs[:40]
-        search_count = qs.count()
+
+    page_obj = None
+
+    # ===== HOME: không search và không lọc danh mục -> lấy 8 bán chạy =====
+    if not active_cat and not q:
+        top_ids = (
+            OrderItem.objects
+            .filter(order__status="PAID")
+            .values("product_id")
+            .annotate(sold=Sum("quantity"))
+            .order_by("-sold")[:8]
+        )
+        top_ids = [x["product_id"] for x in top_ids if x["product_id"]]
+
+        products_map = {p.product_id: p for p in qs.filter(product_id__in=top_ids)}
+        products = [products_map[i] for i in top_ids if i in products_map]
+        search_count = len(products)
+
+    # ===== CATEGORY/SEARCH: phân trang 9 sp =====
     else:
-        products = qs[:8]
-        search_count = 0
+        search_count = qs.count()
+        paginator = Paginator(qs, 9)
+        page_obj = paginator.get_page(page)
+        products = page_obj.object_list
 
     ctx.update({
+        "categories": categories,
+        "nav_categories": nav_categories,
+        "active_cat": active_cat,
         "products": products,
         "q": q,
         "search_count": search_count,
+        "page_obj": page_obj,
     })
     return render(request, "dashboard/dashboard.html", ctx)
 
 
-# =========================
-# Admin page (tabs)
-# =========================
+# =========================================================
+# Admin page (tabs) - (bạn đang dùng như 1 dashboard admin)
+# =========================================================
 def to_admin_page(request):
     account, resp = _admin_required(request)
     if resp:
@@ -231,6 +310,8 @@ def to_admin_page(request):
     products = Product.objects.select_related("category").order_by("-product_id")
     orders = Order.objects.select_related("account").order_by("-created_at")[:10]
 
+    # NOTE: bạn đã có admin_product_create riêng,
+    # nhưng bạn vẫn cho tạo nhanh ngay ở tab admin_page (giữ nguyên).
     if request.method == "POST":
         name = (request.POST.get("product_name") or "").strip()
         price = _to_decimal(request.POST.get("price") or "0")
@@ -307,10 +388,13 @@ def to_admin_page(request):
     })
 
 
-# =========================
-# Cart
-# =========================
+# =========================================================
+# Cart (DB)
+# =========================================================
 def to_view_cart(request):
+    """
+    Trang giỏ hàng (GET).
+    """
     account = get_logged_in_account(request)
     if not account:
         return redirect("to_login_page")
@@ -328,7 +412,11 @@ def to_view_cart(request):
     return render(request, "dashboard/view_cart.html", ctx)
 
 
+@require_POST
 def add_to_cart(request, product_id):
+    """
+    Thêm 1 sản phẩm vào giỏ (POST).
+    """
     account = get_logged_in_account(request)
     if not account:
         return redirect("to_login_page")
@@ -339,19 +427,29 @@ def add_to_cart(request, product_id):
     item = CartItem.objects.filter(cart=cart, product=product).first()
     if item:
         item.quantity += 1
-        item.save()
+        item.save(update_fields=["quantity"])
     else:
         CartItem.objects.create(cart=cart, product=product, quantity=1)
 
     _recalc_cart_quantity(cart)
-    return redirect("to_view_cart")
+
+    # redirect về trang trước cho UX tốt hơn
+    return _redirect_back(request, "to_view_cart")
 
 
+@require_POST
 def cart_inc(request, product_id):
+    """
+    Tăng số lượng (POST). Dùng lại logic add_to_cart.
+    """
     return add_to_cart(request, product_id)
 
 
+@require_POST
 def cart_dec(request, product_id):
+    """
+    Giảm số lượng (POST). Nếu <=0 thì xóa dòng đó.
+    """
     account = get_logged_in_account(request)
     if not account:
         return redirect("to_login_page")
@@ -365,29 +463,36 @@ def cart_dec(request, product_id):
         if item.quantity <= 0:
             item.delete()
         else:
-            item.save()
+            item.save(update_fields=["quantity"])
 
     _recalc_cart_quantity(cart)
-    return redirect("to_view_cart")
+    return _redirect_back(request, "to_view_cart")
 
 
+@require_POST
 def cart_remove(request, product_id):
+    """
+    Xóa 1 sản phẩm khỏi giỏ (POST).
+    """
     account = get_logged_in_account(request)
     if not account:
         return redirect("to_login_page")
 
     cart = get_object_or_404(Cart, account=account)
-    product = get_object_or_404(Product, product_id=product_id)
+    CartItem.objects.filter(cart=cart, product_id=product_id).delete()
 
-    CartItem.objects.filter(cart=cart, product=product).delete()
     _recalc_cart_quantity(cart)
-    return redirect("to_view_cart")
+    return _redirect_back(request, "to_view_cart")
 
 
-# =========================
+# =========================================================
 # Auth
-# =========================
+# =========================================================
 def to_login_page(request):
+    """
+    Login (GET: render form, POST: check).
+    NOTE: bạn đang dùng password plain text (demo).
+    """
     if request.method == "POST":
         username = (request.POST.get("username") or "").strip()
         password = (request.POST.get("password") or "").strip()
@@ -413,6 +518,10 @@ def to_login_page(request):
 
 
 def to_register_page(request):
+    """
+    Register (GET/POST).
+    Tạo đủ Account + Profile + Cart + Wallet.
+    """
     if request.method == "POST":
         username = (request.POST.get("username") or "").strip()
         password = (request.POST.get("password") or "").strip()
@@ -428,18 +537,19 @@ def to_register_page(request):
                 "error_message": "Tên đăng nhập đã tồn tại."
             })
 
-        account = Account.objects.create(username=username, password=password)
+        with transaction.atomic():
+            account = Account.objects.create(username=username, password=password)
 
-        AccountProfile.objects.create(
-            account=account,
-            full_name="Chưa có",
-            date_of_birth=date(2025, 1, 1),
-            email=f"{username}@gmail.com",
-            phone_number="0123456789"
-        )
+            AccountProfile.objects.create(
+                account=account,
+                full_name="Chưa có",
+                date_of_birth=date(2025, 1, 1),
+                email=f"{username}@gmail.com",
+                phone_number="0123456789"
+            )
 
-        Cart.objects.create(account=account, quantity=0)
-        Wallet.objects.create(account=account, balance=0)
+            Cart.objects.create(account=account, quantity=0)
+            Wallet.objects.create(account=account, balance=Decimal("0"))
 
         return render(request, "dashboard/register_page.html", {
             "success_message": "Đăng kí thành công. Vui lòng đăng nhập."
@@ -453,9 +563,9 @@ def logout(request):
     return redirect("dashboard")
 
 
-# =========================
+# =========================================================
 # Checkout / Orders (User)
-# =========================
+# =========================================================
 def checkout(request):
     account = get_logged_in_account(request)
     if not account:
@@ -468,47 +578,43 @@ def checkout(request):
     for item in cart_items:
         total += (item.product.price * item.quantity)
 
-    if request.method == "GET":
+    def _render(msg=None, balance_override=None):
         ctx = build_common_ctx(account)
         ctx.update({
             "cart_items": cart_items,
             "cart_total": total,
-            "receiver_name": "",
-            "receiver_phone": "",
-            "receiver_address": "",
+            "receiver_name": (request.POST.get("receiver_name") or "").strip(),
+            "receiver_phone": (request.POST.get("receiver_phone") or "").strip(),
+            "receiver_address": (request.POST.get("receiver_address") or "").strip(),
         })
-        return render(request, "dashboard/checkout.html", ctx)
-
-    receiver_name = (request.POST.get("receiver_name") or "").strip()
-    receiver_phone = (request.POST.get("receiver_phone") or "").strip()
-    receiver_address = (request.POST.get("receiver_address") or "").strip()
-
-    def _render_error(msg, balance_override=None):
-        ctx = build_common_ctx(account)
-        ctx.update({
-            "cart_items": cart_items,
-            "cart_total": total,
-            "error_message": msg,
-            "receiver_name": receiver_name,
-            "receiver_phone": receiver_phone,
-            "receiver_address": receiver_address,
-        })
+        if msg:
+            ctx["error_message"] = msg
         if balance_override is not None:
             ctx["balance"] = balance_override
         return render(request, "dashboard/checkout.html", ctx)
 
-    if total <= 0:
-        return _render_error("Giỏ hàng đang trống.")
-    if not receiver_name or not receiver_phone or not receiver_address:
-        return _render_error("Vui lòng nhập đủ Họ tên, SĐT và Địa chỉ.")
+    if request.method == "GET":
+        # GET: render form trống
+        return _render()
 
+    # POST: validate
+    receiver_name = (request.POST.get("receiver_name") or "").strip()
+    receiver_phone = (request.POST.get("receiver_phone") or "").strip()
+    receiver_address = (request.POST.get("receiver_address") or "").strip()
+
+    if total <= 0:
+        return _render("Giỏ hàng đang trống.")
+    if not receiver_name or not receiver_phone or not receiver_address:
+        return _render("Vui lòng nhập đủ Họ tên, SĐT và Địa chỉ.")
+
+    # Atomic để trừ ví + tạo đơn + tạo order items + clear cart
     with transaction.atomic():
         wallet = Wallet.objects.select_for_update().get(account=account)
         if wallet.balance < total:
-            return _render_error("Số dư ví không đủ để thanh toán.", balance_override=wallet.balance)
+            return _render("Số dư ví không đủ để thanh toán.", balance_override=wallet.balance)
 
         wallet.balance = wallet.balance - total
-        wallet.save()
+        wallet.save(update_fields=["balance"])
 
         order = Order.objects.create(
             account=account,
@@ -519,6 +625,7 @@ def checkout(request):
             receiver_address=receiver_address
         )
 
+        # tạo OrderItem từ CartItem
         for item in cart_items:
             img_name = item.product.image.name if (item.product and item.product.image) else ""
             OrderItem.objects.create(
@@ -532,7 +639,7 @@ def checkout(request):
 
         cart_items.delete()
         cart.quantity = 0
-        cart.save()
+        cart.save(update_fields=["quantity"])
 
     return redirect("order_detail", order_id=order.order_id)
 
@@ -543,6 +650,7 @@ def my_orders(request):
         return redirect("to_login_page")
 
     orders = Order.objects.filter(account=account).order_by("-created_at")
+
     ctx = build_common_ctx(account)
     ctx.update({"orders": orders})
     return render(request, "dashboard/orders.html", ctx)
@@ -554,11 +662,13 @@ def order_detail(request, order_id):
         return redirect("to_login_page")
 
     order = get_object_or_404(Order, order_id=order_id, account=account)
+
+    # order.items: related_name (bạn đang dùng)
     items = list(order.items.all())
 
     grand_total = Decimal("0")
     for it in items:
-        it.line_total = (it.unit_price * it.quantity)
+        it.line_total = it.unit_price * it.quantity
         grand_total += it.line_total
 
     ctx = build_common_ctx(account)
@@ -566,41 +676,45 @@ def order_detail(request, order_id):
     return render(request, "dashboard/order_detail.html", ctx)
 
 
-# =========================
+# =========================================================
 # Wallet
-# =========================
+# =========================================================
 def wallet_topup(request):
+    """
+    Nạp ví demo:
+    - GET: hiển thị form
+    - POST: cộng tiền (atomic + lock row wallet)
+    """
     account = get_logged_in_account(request)
     if not account:
         return redirect("to_login_page")
 
-    wallet, _ = Wallet.objects.get_or_create(account=account, defaults={"balance": 0})
+    # đảm bảo luôn có wallet
+    Wallet.objects.get_or_create(account=account, defaults={"balance": Decimal("0")})
 
     if request.method == "POST":
-        amount_str = (request.POST.get("amount") or "").strip()
-        try:
-            amount = Decimal(amount_str)
-        except Exception:
-            ctx = build_common_ctx(account)
-            ctx.update({"error_message": "Số tiền không hợp lệ."})
-            return render(request, "dashboard/wallet_topup.html", ctx)
+        amount = _to_decimal(request.POST.get("amount"), default="0")
+
+        ctx = build_common_ctx(account)
 
         if amount <= 0:
-            ctx = build_common_ctx(account)
-            ctx.update({"error_message": "Số tiền phải lớn hơn 0."})
+            ctx["error_message"] = "Số tiền phải lớn hơn 0."
             return render(request, "dashboard/wallet_topup.html", ctx)
 
-        wallet.balance = wallet.balance + amount
-        wallet.save()
+        with transaction.atomic():
+            wallet = Wallet.objects.select_for_update().get(account=account)
+            wallet.balance = wallet.balance + amount
+            wallet.save(update_fields=["balance"])
+
         return redirect("dashboard")
 
     ctx = build_common_ctx(account)
     return render(request, "dashboard/wallet_topup.html", ctx)
 
 
-# =========================
+# =========================================================
 # Product Detail (User)
-# =========================
+# =========================================================
 def product_detail(request, product_id):
     p = get_object_or_404(Product.objects.select_related("category"), product_id=product_id)
 
@@ -614,22 +728,23 @@ def product_detail(request, product_id):
         .order_by("-product_id")[:4]
     )
 
-    # nếu bạn muốn show ảnh phụ ở trang detail thì fetch thêm:
+    # gallery (ProductImage related_name="gallery" bạn đang dùng)
     gallery = p.gallery.all().order_by("sort_order", "id")
 
     ctx.update({"p": p, "related": related, "gallery": gallery})
     return render(request, "dashboard/product_detail.html", ctx)
 
 
-# =========================
+# =========================================================
 # Admin Orders
-# =========================
+# =========================================================
 def admin_orders(request):
     account, resp = _admin_required(request)
     if resp:
         return resp
 
     orders = Order.objects.select_related("account").order_by("-created_at")
+
     ctx = build_common_ctx(account)
     ctx.update({"orders": orders})
     return render(request, "dashboard/admin_orders.html", ctx)
@@ -661,14 +776,14 @@ def admin_order_update_status(request, order_id):
 
     if new_status in allowed:
         order.status = new_status
-        order.save()
+        order.save(update_fields=["status"])
 
     return redirect("admin_order_detail", order_id=order.order_id)
 
 
-# =========================
+# =========================================================
 # Admin Products (List/Create/Edit/Delete)
-# =========================
+# =========================================================
 def admin_products(request):
     account, resp = _admin_required(request)
     if resp:
@@ -696,8 +811,7 @@ def admin_products(request):
         qs = qs.order_by("-product_id")
 
     paginator = Paginator(qs, 10)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
+    page_obj = paginator.get_page(request.GET.get("page"))
 
     return render(request, "dashboard/admin_products.html", {
         "account": account,
@@ -726,7 +840,7 @@ def admin_product_create(request):
     price = _to_decimal(request.POST.get("price") or "0")
     category_id = request.POST.get("category_id")
     desc = (request.POST.get("description") or "").strip()
-    image = request.FILES.get("image")  # có thể None nếu bạn cho phép
+    image = request.FILES.get("image")
 
     is_genuine = (request.POST.get("is_genuine") == "on")
     is_fast_ship = (request.POST.get("is_fast_ship") == "on")
@@ -879,15 +993,203 @@ def admin_product_edit(request, product_id):
     return redirect("admin_products")
 
 
+@require_POST
 def admin_product_delete(request, product_id):
     account, resp = _admin_required(request)
     if resp:
         return resp
 
     p = get_object_or_404(Product, product_id=product_id)
-
-    if request.method == "POST":
-        p.delete()
-        return redirect("admin_products")
-
+    p.delete()
     return redirect("admin_products")
+
+
+# =========================================================
+# Admin Users
+# =========================================================
+def admin_users(request):
+    account, resp = _admin_required(request)
+    if resp:
+        return resp
+
+    q = (request.GET.get("q") or "").strip()
+
+    qs = Account.objects.all().order_by("-id")
+    if q:
+        qs = qs.filter(
+            Q(username__icontains=q)
+            | Q(accountprofile__full_name__icontains=q)
+            | Q(accountprofile__email__icontains=q)
+            | Q(accountprofile__phone_number__icontains=q)
+        )
+
+    paginator = Paginator(qs, 10)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    ctx = build_common_ctx(account)
+    ctx.update({"page_obj": page_obj, "q": q})
+    return render(request, "dashboard/admin_users.html", ctx)
+
+
+def admin_user_create(request):
+    account, resp = _admin_required(request)
+    if resp:
+        return resp
+
+    ctx = build_common_ctx(account)
+
+    if request.method == "GET":
+        return render(request, "dashboard/admin_user_create.html", ctx)
+
+    username = (request.POST.get("username") or "").strip()
+    password = (request.POST.get("password") or "").strip()
+    role = (request.POST.get("role") or "USER").strip().upper()
+    status = (request.POST.get("status") or "normal").strip()
+
+    full_name = (request.POST.get("full_name") or "").strip() or "Chưa có"
+    dob = _to_date(request.POST.get("date_of_birth") or "2025-01-01")
+    email = (request.POST.get("email") or "").strip()
+    phone = (request.POST.get("phone_number") or "").strip()
+    balance = _to_decimal(request.POST.get("balance") or "0")
+
+    if not username or not password:
+        ctx["error_message"] = "Vui lòng nhập Username và Password."
+        return render(request, "dashboard/admin_user_create.html", ctx)
+
+    if role not in {"ADMIN", "USER"}:
+        role = "USER"
+
+    if Account.objects.filter(username=username).exists():
+        ctx["error_message"] = "Username đã tồn tại."
+        return render(request, "dashboard/admin_user_create.html", ctx)
+
+    if email and AccountProfile.objects.filter(email=email).exists():
+        ctx["error_message"] = "Email đã tồn tại."
+        return render(request, "dashboard/admin_user_create.html", ctx)
+
+    with transaction.atomic():
+        u = Account.objects.create(username=username, password=password, role=role, status=status)
+
+        AccountProfile.objects.create(
+            account=u,
+            full_name=full_name,
+            date_of_birth=dob,
+            email=(email or f"{username}@gmail.com"),
+            phone_number=(phone or "0123456789"),
+        )
+
+        Cart.objects.create(account=u, quantity=0)
+        Wallet.objects.create(account=u, balance=balance)
+
+    return redirect("admin_users")
+
+
+def admin_user_edit(request, user_id):
+    account, resp = _admin_required(request)
+    if resp:
+        return resp
+
+    u = get_object_or_404(Account, id=user_id)
+
+    # đảm bảo luôn có profile + wallet + cart
+    profile, _ = AccountProfile.objects.get_or_create(
+        account=u,
+        defaults={
+            "full_name": "Chưa có",
+            "date_of_birth": date(2025, 1, 1),
+            "email": f"{u.username}@gmail.com",
+            "phone_number": "0123456789",
+        }
+    )
+    wallet, _ = Wallet.objects.get_or_create(account=u, defaults={"balance": Decimal("0")})
+    Cart.objects.get_or_create(account=u, defaults={"quantity": 0})
+
+    ctx = build_common_ctx(account)
+    ctx.update({"u": u, "p": profile, "w": wallet})
+
+    if request.method == "GET":
+        return render(request, "dashboard/admin_user_edit.html", ctx)
+
+    username = (request.POST.get("username") or "").strip()
+    password = (request.POST.get("password") or "").strip()
+    role = (request.POST.get("role") or "USER").strip().upper()
+    status = (request.POST.get("status") or "normal").strip()
+
+    full_name = (request.POST.get("full_name") or "").strip()
+    dob = _to_date(request.POST.get("date_of_birth") or "", default_date=profile.date_of_birth or date(2025, 1, 1))
+    email = (request.POST.get("email") or "").strip()
+    phone = (request.POST.get("phone_number") or "").strip()
+    balance = _to_decimal(request.POST.get("balance") or str(wallet.balance))
+
+    if not username:
+        ctx["error_message"] = "Username không được để trống."
+        return render(request, "dashboard/admin_user_edit.html", ctx)
+
+    if role not in {"ADMIN", "USER"}:
+        role = "USER"
+
+    if Account.objects.filter(username=username).exclude(id=u.id).exists():
+        ctx["error_message"] = "Username đã tồn tại."
+        return render(request, "dashboard/admin_user_edit.html", ctx)
+
+    if email and AccountProfile.objects.filter(email=email).exclude(id=profile.id).exists():
+        ctx["error_message"] = "Email đã tồn tại."
+        return render(request, "dashboard/admin_user_edit.html", ctx)
+
+    with transaction.atomic():
+        u.username = username
+        u.role = role
+        u.status = status
+        if password:
+            u.password = password  # demo plain text
+        u.save()
+
+        profile.full_name = full_name or profile.full_name
+        profile.date_of_birth = dob
+        profile.email = email or profile.email
+        profile.phone_number = phone or profile.phone_number
+        profile.save()
+
+        wallet.balance = balance
+        wallet.save(update_fields=["balance"])
+
+    return redirect("admin_users")
+
+
+@require_POST
+def admin_user_toggle(request, user_id):
+    account, resp = _admin_required(request)
+    if resp:
+        return resp
+
+    u = get_object_or_404(Account, id=user_id)
+
+    # không tự khóa chính mình
+    if u.id == account.id:
+        return redirect("admin_users")
+
+    u.status = "locked" if (u.status == "normal") else "normal"
+    u.save(update_fields=["status"])
+    return redirect("admin_users")
+
+
+@require_POST
+def admin_user_delete(request, user_id):
+    account, resp = _admin_required(request)
+    if resp:
+        return resp
+
+    u = get_object_or_404(Account, id=user_id)
+
+    # không tự xóa chính mình
+    if u.id == account.id:
+        return redirect("admin_users")
+
+    # nếu user có đơn -> KHÓA thay vì xóa để tránh bay Order
+    if Order.objects.filter(account=u).exists():
+        u.status = "locked"
+        u.save(update_fields=["status"])
+        return redirect("admin_users")
+
+    u.delete()
+    return redirect("admin_users")
